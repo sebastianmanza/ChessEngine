@@ -13,6 +13,7 @@ import utils.MCTUtils.move;
 public class MCT {
     /** The exploration parameter, used to balance exploration vs exploitation */
     public static final double EXPLORATION_PARAM = Math.sqrt(2);
+
     /** The root node of the move. */
     MCNode root;
 
@@ -35,9 +36,9 @@ public class MCT {
             MCNode selectedNode = select(root);
             MCNode expandedNode = expand(selectedNode);
             double winPoints = simulate(expandedNode);
-            backPropagate(expandedNode, winPoints);
+            backPropagate(expandedNode, winPoints, root);
 
-            /* Find and update the best move amongst all futureMoves from the root */
+            /* Find and update the best move amongst all nextMoves from the root */
             bestMove = Collections.max(root.nextMoves, Comparator.comparingInt(n -> n.totalPlayOuts)).currentMove;
         }
          return bestMove;
@@ -100,9 +101,9 @@ public class MCT {
      * @param node The node to backpropagate from (terminating node)
      * @param winPoints The number of points to be given.  
      */
-    public void backPropagate(MCNode node, double winPoints) {
+    public static void backPropagate(MCNode node, double winPoints, MCNode root) {
         MCNode curNode = node;
-        while(curNode != this.root) {
+        while(curNode != root) {
             curNode.totalPlayOuts++;
             curNode.totalWins += winPoints;
             curNode = curNode.lastMove;

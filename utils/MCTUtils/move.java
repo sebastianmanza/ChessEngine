@@ -4,7 +4,11 @@ package utils.MCTUtils;
  * @author Sebastian Manza
  */
 public class move {
-    public move() {
+    startingSquare;
+    endingSquare;
+    
+    public move(String moveTo) {
+
 
     }
 

@@ -12,6 +12,7 @@ public class gameState {
     }
     color turn;
     color engineColor;
+    MCNode curNode;
 
     /**
      * Returns true if the game is completed, i.e. if there are no possible next moves, else return false.
@@ -23,11 +24,11 @@ public class gameState {
 
     /**
      * Returns the number of points won by the engine from the current gameState
-     * @param gameState The current node that the game is on
+     * @param board The current chessBoard
      * @throws Exception if the game is unfinished
      */
-    public double vicPoints(MCNode gameState, chessBoard board) throws Exception{
-        if (!gameFinished(gameState)) {
+    public double vicPoints(chessBoard board) throws Exception{
+        if (!gameFinished(this.curNode)) {
             throw new Exception("The game is not complete.");
         } // if
         /* Check if it's the engines turn */
