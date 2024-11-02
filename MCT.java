@@ -40,9 +40,9 @@ public class MCT {
 
             /* Find and update the best move amongst all nextMoves from the root */
             bestMove = Collections.max(root.nextMoves, Comparator.comparingInt(n -> n.totalPlayOuts)).currentMove;
-        }
+        } // for
          return bestMove;
-    }
+    } //search(iterations)
 
     /**
      * Calculates a value for a node to select
@@ -108,5 +108,5 @@ public class MCT {
             curNode.totalWins += winPoints;
             curNode = curNode.lastMove;
         } // while
-    } //backPropogate
-}
+    } // backPropogate(node, winPoints, root)
+} //MCT

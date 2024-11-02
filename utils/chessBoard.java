@@ -89,7 +89,7 @@ public class chessBoard {
      * @param notation The original notation of the square. i.e "a1".
      * @throws Exception if the row or column are out of bounds.
      */
-    private static int[] convertNotation(String notation) throws Exception{
+    public static int[] convertNotation(String notation) throws Exception{
         /* Create a new array to store the notation */
         int[] arr = new int[2];
         /* Set the rows and columns */
@@ -102,6 +102,16 @@ public class chessBoard {
         arr[1] = col;
         return arr;
     } // convertNotation(notation)
+
+
+    /** Converts array notation into traditional notation
+     * @param arr The array describing a row and col.
+     * @throws Exception if the row or column are out of bounds.
+     */
+    public static String convertNotation(int[] arr) throws Exception{
+        StringBuilder str = new StringBuilder();
+        return str.toString(); //STUB
+    } 
 
     public void printBoard(){
         PrintWriter pen = new PrintWriter(System.out, true);

@@ -1,5 +1,5 @@
-import utils.chessBoard;
 import utils.MCTUtils.MCNode;
+import utils.chessBoard;
 /**
  * Tracks the current state of the game. 
  * @author Sebastian Manza
@@ -19,7 +19,7 @@ public class gameState {
      * @param gameState The current node that the game is on.
      */
     public static boolean gameFinished(MCNode gameState) {
-        return gameState.nextMoves().isEmpty();
+        return gameState.nextMoves.isEmpty();
     } //gameFinished(gameState)
 
     /**
@@ -33,7 +33,7 @@ public class gameState {
         } // if
         /* Check if it's the engines turn */
         if (turn == engineColor) {
-            if (engineColor.inCheck(board)) {
+            if (inCheck(engineColor, board)) {
                 return 0.0;
             } else {
                 return 0.5;
@@ -46,7 +46,7 @@ public class gameState {
     /** A boolean that returns true if the current color is in check, else false.
      * @param board The current chessboard
      */
-    public boolean inCheck(chessBoard board) {
+    public static boolean inCheck(color engineColor, chessBoard board) {
         return true; //STUB
     }
 }

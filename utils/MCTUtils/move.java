@@ -4,12 +4,20 @@ package utils.MCTUtils;
  * @author Sebastian Manza
  */
 public class move {
-    startingSquare;
-    endingSquare;
+    String startingSquare;
+    String endingSquare;
     
-    public move(String moveTo) {
+    public move (piece piece, String moveTo) {
+        this.endingSquare = moveTo;
+        this.startingSquare = piece.square;
+    } //move
 
-
+    /**
+     * Distinctly different from move in that move is a possibility, movePiece is the execution.
+     * @param move Takes in a move to execute
+     */
+    public void executeMove(move move) {
+        return; //STUB
     }
 
 }
