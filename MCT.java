@@ -1,10 +1,12 @@
+
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Random;
+
 import java.lang.Math;
+import utils.GameState;
 
 import utils.MCTUtils.MCNode;
-import utils.MCTUtils.move;
 
 /**
  * A class that constructs and runs a Monte Carlo Tree Search.
@@ -20,18 +22,18 @@ public class MCT {
     /** Creates a new Monte Carlo Treee
      * @param currentMove The most recent move made.
      */
-    public MCT(move currentMove) {
+    public MCT(GameState currentMove) {
         this.root = new MCNode(currentMove);
     }
     /* Stores the current best move that can be made */
-    move bestMove;
+    GameState bestMove;
 
     /**
      * Searches for the best possible move to be made from the current game state.
      * @param iterations The number of iterations to attempt
      * @return The best possible move
      */
-    public move search(int iterations) {
+    public GameState search(int iterations) {
         for (int i = 0; i < iterations; i++) {
             MCNode selectedNode = select(root);
             MCNode expandedNode = expand(selectedNode);
@@ -89,7 +91,7 @@ public class MCT {
         Random ranMove = new Random();
         MCNode curMove = node;
         /* Run the loop while the game is undecided */
-        while(!gameState.gameFinished(curMove)) {
+        while(!origGameState.gameFinished(curMove)) {
             /* take a random move and play from that position */
             curMove = curMove.nextMoves.get(ranMove.nextInt(curMove.nextMoves.size()));
         } // while
