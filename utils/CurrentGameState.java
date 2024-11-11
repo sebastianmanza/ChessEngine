@@ -3,6 +3,8 @@ package utils;
 import java.io.PrintWriter;
 import java.util.Arrays;
 
+import PieceMoves;
+
 public class CurrentGameState implements GameState {
 
     /**
@@ -158,15 +160,17 @@ public class CurrentGameState implements GameState {
 
     /**
      * Gets the color of the piece.
+     *
      * @param piece The byte representing the piece
      * @return A byte representation of the pieces color
      */
     public static byte pieceColor(byte piece) {
-        return (byte)((piece & ((byte) 7)) >> 3);
+        return (byte) ((piece & ((byte) 7)) >> 3);
     } //pieceColor
 
     /**
      * Checks if the color of the piece is the same as the color of the turn.
+     *
      * @param piece The byte representing the piece
      * @param turnColor The byte representing the turn color
      * @return true if it is the same, otherwise false.
@@ -174,10 +178,6 @@ public class CurrentGameState implements GameState {
     public static boolean isColor(byte piece, byte turnColor) {
         return (pieceColor(piece) == turnColor);
     } //isColor
-
-    public GameState[] generatePieceMoves(byte piece, int square) {
-        return new GameState[10]; //STUB
-    }
 
     public GameState[] nextMoves() {
         /* Create an array to store all possible next moves, and an integer to store the current number of moves in the array. */
@@ -192,7 +192,7 @@ public class CurrentGameState implements GameState {
             if (piece == PieceTypes.EMPTY || !isColor(piece, this.turnColor)) {
                 continue;
             } //if
-            
+
             /* Create a new array for all the possible moves of that piece */
             GameState[] pieceMoves = this.generatePieceMoves(piece, square);
 
@@ -206,11 +206,42 @@ public class CurrentGameState implements GameState {
                         Arrays.copyOf(nextPositions, numPossibleMoves * 2);
                     } //if
                 } //if
-                
-            } //for
 
+            } //for
+        } //for
         return nextPositions;
-    }
+    } //nextMoves
+
+    public GameState[] generatePieceMoves(byte piece, int square) {
+        /* Create a new array that will return the types. */
+        GameState[] pieceMoves;
+        byte color = pieceColor(piece);
+
+        /* Check the type of the piece and generate the appropriate moves. Note that for slideMoves,
+         the specific color given as pieceType is irrelevant, since that bit will not be looked at */
+        switch (piece) {
+            case (PieceTypes.WHITE_PAWN | PieceTypes.BLACK_PAWN):
+                pieceMoves = PieceMoves.pawnMoves(square, color);
+                break;
+            case (PieceTypes.WHITE_KNIGHT | PieceTypes.BLACK_KNIGHT):
+                pieceMoves = PieceMoves.knightMoves(square, color);
+                break;
+            case (PieceTypes.WHITE_BISHOP | PieceTypes.BLACK_BISHOP):
+                pieceMoves = PieceMoves.slideMoves(square, color, PieceTypes.WHITE_BISHOP);
+                break;
+            case (PieceTypes.WHITE_ROOK | PieceTypes.BLACK_ROOK):
+                pieceMoves = PieceMoves.slideMoves(square, color, PieceTypes.WHITE_ROOK);
+                break;
+            case (PieceTypes.WHITE_QUEEN | PieceTypes.BLACK_QUEEN):
+                pieceMoves = PieceMoves.slideMoves(square, color, PieceTypes.WHITE_QUEEN);
+                break;
+            case (PieceTypes.WHITE_KING | PieceTypes.BLACK_KING):
+                pieceMoves = PieceMoves.kingMoves(square, color);
+                break;
+            default:
+                throw new AssertionError();
+        } //switch
+        return pieceMoves;
+    } //generatePieceMoves
 
 } //CurrentGameState
-
