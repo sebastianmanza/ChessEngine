@@ -1,6 +1,7 @@
 package utils;
 
 import java.io.PrintWriter;
+import java.util.Arrays;
 
 public class CurrentGameState implements GameState {
 
@@ -195,10 +196,15 @@ public class CurrentGameState implements GameState {
             /* Create a new array for all the possible moves of that piece */
             GameState[] pieceMoves = this.generatePieceMoves(piece, square);
 
-            /* Add legal moves to the master list of nextPositions */
+            /* Add legal game states (those where the king is not in check) to the master list of nextPositions */
             for (GameState pieceMove : pieceMoves) {
                 if (pieceMove.isLegal()) {
                     nextPositions[numPossibleMoves] = pieceMove;
+                    numPossibleMoves++;
+                    if (numPossibleMoves >= nextPositions.length) {
+                        /* Expand the array if its full. */
+                        Arrays.copyOf(nextPositions, numPossibleMoves * 2);
+                    } //if
                 } //if
                 
             } //for
