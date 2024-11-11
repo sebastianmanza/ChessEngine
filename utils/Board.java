@@ -232,13 +232,13 @@ public class Board implements GameState {
                 pieceMoves = PieceMoves.knightMoves(square, color, this);
                 break;
             case (PieceTypes.WHITE_BISHOP | PieceTypes.BLACK_BISHOP):
-                pieceMoves = PieceMoves.slideMoves(square, color, PieceTypes.WHITE_BISHOP);
+                pieceMoves = PieceMoves.slideMoves(square, color, PieceTypes.WHITE_BISHOP, this);
                 break;
             case (PieceTypes.WHITE_ROOK | PieceTypes.BLACK_ROOK):
-                pieceMoves = PieceMoves.slideMoves(square, color, PieceTypes.WHITE_ROOK);
+                pieceMoves = PieceMoves.slideMoves(square, color, PieceTypes.WHITE_ROOK, this);
                 break;
             case (PieceTypes.WHITE_QUEEN | PieceTypes.BLACK_QUEEN):
-                pieceMoves = PieceMoves.slideMoves(square, color, PieceTypes.WHITE_QUEEN);
+                pieceMoves = PieceMoves.slideMoves(square, color, PieceTypes.WHITE_QUEEN, this);
                 break;
             case (PieceTypes.WHITE_KING | PieceTypes.BLACK_KING):
                 pieceMoves = PieceMoves.kingMoves(square, color);

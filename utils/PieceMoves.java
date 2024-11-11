@@ -1,4 +1,5 @@
 package utils;
+
 import java.util.Arrays;
 
 public class PieceMoves {
@@ -31,12 +32,11 @@ public class PieceMoves {
         return promotionMoves;
     }
 
-
     public static GameState movePiece(int startingSquare, int endingSquare, GameState originalGameState) {
         GameState newGameState;
-        /* Not sure if this copies the game state or not, but will definitely need to. */
+        /* Make a copy of the original game state */
         newGameState = originalGameState.copyGameState();
-        
+
         /* Set the ending square to the piece at the starting square. Then clear the start square.*/
         newGameState.setSquare(endingSquare, newGameState.getSquare(startingSquare));
         newGameState.setSquare(startingSquare, PieceTypes.EMPTY);
@@ -103,17 +103,14 @@ public class PieceMoves {
                         pawnMoves[numMoves] = promotePiece(square, capture, currentState)[i];
                         numMoves++;
                     } //for
-                } else { 
+                } else {
                     pawnMoves[numMoves] = movePiece(square, capture, currentState);
                     numMoves++;
                 } //if/else
             } //if
         } //for
 
-
         //Need to add en passant.
-
-
         return Arrays.copyOfRange(pawnMoves, 0, numMoves);
     }
 
@@ -132,11 +129,10 @@ public class PieceMoves {
             byte endingPiece = currentState.getSquare(endingSquare);
 
             /* Checks to make sure it doesn't wrap around and stays in bounds and checks to make sure it is not our piece. */
-            if ((Math.abs(endingRow - row) <= 2) && 
-                (Math.abs(endingCol - col) <= 2) && 
-                ((endingSquare >= 0) && (endingSquare <= 63)) &&
-                ((endingPiece == PieceTypes.EMPTY) || (Board.pieceColor(endingPiece) != color))
-            ) {
+            if ((Math.abs(endingRow - row) <= 2)
+                    && (Math.abs(endingCol - col) <= 2)
+                    && ((endingSquare >= 0) && (endingSquare <= 63))
+                    && ((endingPiece == PieceTypes.EMPTY) || (Board.pieceColor(endingPiece) != color))) {
                 knightMoves[numMoves] = movePiece(square, endingSquare, currentState);
                 numMoves++;
             } //if
@@ -146,42 +142,92 @@ public class PieceMoves {
 
     public static GameState[] slideMoves(int square, byte color, byte pieceType, GameState currentState) {
         /* The queen can move 28 different ways if placed correctly. */
-        GameState[] slidingMoves = new GameState[28];
+        GameState[] slideMoves= new GameState[28];
         int numMoves = 0;
 
-        int[] rookMoves = {-8, -1, 1, 8};
-        int[] bishopMoves = {-9, -6, 6, 9};
-        
+        int endingSquare;
+        int endingCol;
+        int endingRow;
+        byte pieceOnSquare;
+
+
+        /* The offsets for the different move types */
+        int[] straightMoves = {-8, -1, 1, 8};
+        int[] diagMoves = {-9, -7, 7, 9};
+
         int col = square % 8;
         int row = square / 8;
 
-        for (int move : rookMoves) {
-            int endingSquare = square + move;
-            int endingCol = endingSquare % 8;
-            int endingRow = endingSquare / 8;
-            boolean wrapsAround = false;
-            byte endingPiece = currentState.getSquare(endingSquare);
+        /* Generate horizontal mvoes if the piece is a rook or a queen */
+        if ((pieceType == PieceTypes.WHITE_ROOK) || (pieceType == PieceTypes.WHITE_QUEEN)) {
+            for (int move : straightMoves) {
+                endingSquare = square;
 
-            if (endingCol != col && endingRow != row) {
-                wrapsAround = true;
-            }
+                /* Continue moving the piece in the direction hile it can */
+                while (true) { 
+                endingSquare += move;
+                endingCol = endingSquare % 8;
+                endingRow = endingSquare / 8;
+                pieceOnSquare = currentState.getSquare(endingSquare);
 
-            if (((endingSquare >= 0) && (endingSquare <= 63)) && ((endingPiece == PieceTypes.EMPTY) || (Board.pieceColor(endingPiece) != color))) {
-                slidingMoves[numMoves] = movePiece(square, endingSquare, currentState);
-                numMoves++;
-            }
+                /* Either the columns or the rows must still be the same to avoid a wraparound. */
+                if (endingCol != col && endingRow != row) {
+                    break;
+                } //if
 
-        }
+                /* Check that it remains within bounds. */
+                if ((endingSquare > 63 || (endingSquare < 0))) {
+                    break;
+                } //if
 
-        
-        /* Notes for wraparound checks: The rook has wrapped around 
-        if it is not on the same col as the start for forward moves, 
-        or same row as start for sideways moves. The bishop has wrapped around if 
-        It is not an equal amount of rows and columns from its start. The queen has to 
-        be one of the two.*/
+                /* Check that the square is either empty or an opposing color. */
+                if (pieceOnSquare != PieceTypes.EMPTY || Board.pieceColor(pieceOnSquare) == color) {
+                    break;
+                } //if
 
-        return Arrays.copyOfRange(slidingMoves, 0, numMoves);
-    }
+                slideMoves[numMoves] = movePiece(square, endingSquare, currentState);
+                numMoves++;                 
+                } //while(true)
+
+            } //for
+        } //if 
+
+        /* Generate diagonal moves if the piece is a bishop or a queen */
+        if ((pieceType == PieceTypes.WHITE_BISHOP) || (pieceType == PieceTypes.WHITE_QUEEN)) {
+            for (int move : diagMoves) {
+                endingSquare = square;
+
+                /* Continue moving the piece in the direction while it can */
+                while (true) { 
+                endingSquare += move;
+                endingCol = endingSquare % 8;
+                endingRow = endingSquare / 8;
+                pieceOnSquare = currentState.getSquare(endingSquare);
+
+                /* The difference between the starting column and ending column 
+                and starting row and ending row must be equal for it to be a valid move */
+                if (Math.abs(endingCol - col) != Math.abs(endingRow - row)) {
+                    break;
+                } //if
+
+                /* Check that it remains within bounds. */
+                if ((endingSquare > 63 || (endingSquare < 0))) {
+                    break;
+                } //if
+
+                /* Check that the square is either empty or an opposing color. */
+                if (pieceOnSquare != PieceTypes.EMPTY || Board.pieceColor(pieceOnSquare) == color) {
+                    break;
+                } //if
+
+                slideMoves[numMoves] = movePiece(square, endingSquare, currentState);
+                numMoves++;                 
+                } //while(true)
+
+            } //for
+        } //if
+        return Arrays.copyOfRange(slideMoves, 0, numMoves);
+    } //slideMoves
 
     public static GameState[] kingMoves(int square, byte color) {
         GameState[] kingMoves = new GameState[8];
