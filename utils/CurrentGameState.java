@@ -155,5 +155,56 @@ public class CurrentGameState implements GameState {
         return this.board;
     } //getBoard();
 
+    /**
+     * Gets the color of the piece.
+     * @param piece The byte representing the piece
+     * @return A byte representation of the pieces color
+     */
+    public static byte pieceColor(byte piece) {
+        return (byte)((piece & ((byte) 7)) >> 3);
+    } //pieceColor
+
+    /**
+     * Checks if the color of the piece is the same as the color of the turn.
+     * @param piece The byte representing the piece
+     * @param turnColor The byte representing the turn color
+     * @return true if it is the same, otherwise false.
+     */
+    public static boolean isColor(byte piece, byte turnColor) {
+        return (pieceColor(piece) == turnColor);
+    } //isColor
+
+    public GameState[] generatePieceMoves(byte piece, int square) {
+        return new GameState[10]; //STUB
+    }
+
+    public GameState[] nextMoves() {
+        /* Create an array to store all possible next moves, and an integer to store the current number of moves in the array. */
+        GameState[] nextPositions = new GameState[50];
+        int numPossibleMoves = 0;
+
+        /* Loop through the board to check all the pieces */
+        for (int square = 0; square < 64; square++) {
+            byte piece = getSquare(square);
+
+            /* If the square is empty, or its an opponents piece, don't bother looking at the moves. */
+            if (piece == PieceTypes.EMPTY || !isColor(piece, this.turnColor)) {
+                continue;
+            } //if
+            
+            /* Create a new array for all the possible moves of that piece */
+            GameState[] pieceMoves = this.generatePieceMoves(piece, square);
+
+            /* Add legal moves to the master list of nextPositions */
+            for (GameState pieceMove : pieceMoves) {
+                if (pieceMove.isLegal()) {
+                    nextPositions[numPossibleMoves] = pieceMove;
+                } //if
+                
+            } //for
+
+        return nextPositions;
+    }
+
 } //CurrentGameState
 

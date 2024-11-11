@@ -47,4 +47,19 @@ public interface GameState {
      */
     void printBoard() throws Exception;
 
+    /**
+     * Checks if the board is in a legal position (no king is in check)
+     * 
+     * @return true if position is legal, otherwise false
+     */
+    boolean isLegal();
+
+    /**
+     * Generates all possible moves for a piece
+     * @param piece The piece type, represented as a byte
+     * @param square The integer representation of the square
+     * @return An array containing all possible moves for the type.
+     */
+    GameState[] generatePieceMoves(byte piece, int square);
+
 } //GameState
