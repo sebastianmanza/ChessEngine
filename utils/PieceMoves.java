@@ -144,10 +144,34 @@ public class PieceMoves {
         return Arrays.copyOfRange(knightMoves, 0, numMoves);
     } //knightMoves
 
-    public static GameState[] slideMoves(int square, byte color, byte pieceType) {
+    public static GameState[] slideMoves(int square, byte color, byte pieceType, GameState currentState) {
         /* The queen can move 28 different ways if placed correctly. */
         GameState[] slidingMoves = new GameState[28];
         int numMoves = 0;
+
+        int[] rookMoves = {-8, -1, 1, 8};
+        int[] bishopMoves = {-9, -6, 6, 9};
+        
+        int col = square % 8;
+        int row = square / 8;
+
+        for (int move : rookMoves) {
+            int endingSquare = square + move;
+            int endingCol = endingSquare % 8;
+            int endingRow = endingSquare / 8;
+            boolean wrapsAround = false;
+            byte endingPiece = currentState.getSquare(endingSquare);
+
+            if (endingCol != col && endingRow != row) {
+                wrapsAround = true;
+            }
+
+            if (((endingSquare >= 0) && (endingSquare <= 63)) && ((endingPiece == PieceTypes.EMPTY) || (Board.pieceColor(endingPiece) != color))) {
+                slidingMoves[numMoves] = movePiece(square, endingSquare, currentState);
+                numMoves++;
+            }
+
+        }
 
         
         /* Notes for wraparound checks: The rook has wrapped around 
