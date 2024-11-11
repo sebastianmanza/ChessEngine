@@ -114,16 +114,35 @@ public class PieceMoves {
         //Need to add en passant.
 
 
-        return pawnMoves;
+        return Arrays.copyOfRange(pawnMoves, 0, numMoves);
     }
 
-    public static GameState[] knightMoves(int square, byte color) {
+    public static GameState[] knightMoves(int square, byte color, GameState currentState) {
         /* A knight can only move a maximum of 8 ways. */
         GameState[] knightMoves = new GameState[8];
+        int numMoves = 0;
+        int[] LMoves = {-17, -15, -10, -6, 6, 10, 15, 17};
+        int row = square % 8;
+        int col = square / 8;
 
+        for (int LMove : LMoves) {
+            int endingSquare = square + LMove;
+            int endingRow = endingSquare % 8;
+            int endingCol = endingSquare / 8;
+            byte endingPiece = currentState.getSquare(endingSquare);
 
-        return knightMoves;
-    }
+            /* Checks to make sure it doesn't wrap around and stays in bounds and checks to make sure it is not our piece. */
+            if ((Math.abs(endingRow - row) <= 2) && 
+                (Math.abs(endingCol - col) <= 2) && 
+                ((endingSquare >= 0) && (endingSquare <= 63)) &&
+                ((endingPiece == PieceTypes.EMPTY) || (Board.pieceColor(endingPiece) != color))
+            ) {
+                knightMoves[numMoves] = movePiece(square, endingSquare, currentState);
+                numMoves++;
+            } //if
+        } //for
+        return Arrays.copyOfRange(knightMoves, 0, numMoves);
+    } //knightMoves
 
     public static GameState[] slideMoves(int square, byte color, byte pieceType) {
         /* The queen can move 28 different ways if placed correctly. */
