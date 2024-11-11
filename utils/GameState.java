@@ -62,4 +62,10 @@ public interface GameState {
      */
     GameState[] generatePieceMoves(byte piece, int square);
 
+    /**
+     * Creates a copy of the current game state.
+     * @return A copy of the game state
+     */
+    GameState copyGameState();
+
 } //GameState

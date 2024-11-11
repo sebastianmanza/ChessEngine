@@ -3,8 +3,6 @@ package utils;
 import java.io.PrintWriter;
 import java.util.Arrays;
 
-import PieceMoves;
-
 public class Board implements GameState {
 
     /**
@@ -19,7 +17,7 @@ public class Board implements GameState {
     /**
      * The game board.
      */
-    private byte[][] board = new byte[NUM_COLS][NUM_ROWS];
+    byte[][] board = new byte[NUM_COLS][NUM_ROWS];
 
     /**
      * The color of the turn
@@ -231,7 +229,7 @@ public class Board implements GameState {
                 pieceMoves = PieceMoves.pawnMoves(square, color, this);
                 break;
             case (PieceTypes.WHITE_KNIGHT | PieceTypes.BLACK_KNIGHT):
-                pieceMoves = PieceMoves.knightMoves(square, color);
+                pieceMoves = PieceMoves.knightMoves(square, color, this);
                 break;
             case (PieceTypes.WHITE_BISHOP | PieceTypes.BLACK_BISHOP):
                 pieceMoves = PieceMoves.slideMoves(square, color, PieceTypes.WHITE_BISHOP);
@@ -250,5 +248,15 @@ public class Board implements GameState {
         } //switch
         return pieceMoves;
     } //generatePieceMoves
+
+    public GameState copyGameState() {
+        Board returnState = new Board(this.turnColor, this.engineColor);
+        for (int i = 0; i < 8; i++) {
+            for (int j = 0; j < 4; j++) {
+                returnState.board[i][j] = this.board[i][j];
+            } //for
+        } //for
+        return returnState;
+    } //copyGameState()
 
 } //CurrentGameState

@@ -5,10 +5,10 @@ public class PieceMoves {
 
     public static GameState[] promotePiece(int startingSquare, int endingSquare, GameState originalGameState) {
         GameState[] promotionMoves = new GameState[4];
-        GameState newGameState = originalGameState;
-        GameState newGameStateTwo = originalGameState;
-        GameState newGameStateThree = originalGameState;
-        GameState newGameStateFour = originalGameState;
+        GameState newGameState = originalGameState.copyGameState();
+        GameState newGameStateTwo = originalGameState.copyGameState();
+        GameState newGameStateThree = originalGameState.copyGameState();
+        GameState newGameStateFour = originalGameState.copyGameState();
 
 
         /*Need to check for piece color */
@@ -35,7 +35,7 @@ public class PieceMoves {
     public static GameState movePiece(int startingSquare, int endingSquare, GameState originalGameState) {
         GameState newGameState;
         /* Not sure if this copies the game state or not, but will definitely need to. */
-        newGameState = originalGameState;
+        newGameState = originalGameState.copyGameState();
         
         /* Set the ending square to the piece at the starting square. Then clear the start square.*/
         newGameState.setSquare(endingSquare, newGameState.getSquare(startingSquare));
@@ -147,7 +147,16 @@ public class PieceMoves {
     public static GameState[] slideMoves(int square, byte color, byte pieceType) {
         /* The queen can move 28 different ways if placed correctly. */
         GameState[] slidingMoves = new GameState[28];
-        return slidingMoves;
+        int numMoves = 0;
+
+        
+        /* Notes for wraparound checks: The rook has wrapped around 
+        if it is not on the same col as the start for forward moves, 
+        or same row as start for sideways moves. The bishop has wrapped around if 
+        It is not an equal amount of rows and columns from its start. The queen has to 
+        be one of the two.*/
+
+        return Arrays.copyOfRange(slidingMoves, 0, numMoves);
     }
 
     public static GameState[] kingMoves(int square, byte color) {
