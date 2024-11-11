@@ -5,7 +5,7 @@ import java.util.Arrays;
 
 import PieceMoves;
 
-public class CurrentGameState implements GameState {
+public class Board implements GameState {
 
     /**
      * An integer representing the number of columns.
@@ -37,7 +37,7 @@ public class CurrentGameState implements GameState {
      * @param turnCol representing who's turn it currently is
      * @param engineCol representing the color the engine is playing as
      */
-    public CurrentGameState(byte turnCol, byte engineCol) {
+    public Board(byte turnCol, byte engineCol) {
         this.turnColor = turnCol;
         this.engineColor = engineCol;
     }
@@ -179,6 +179,13 @@ public class CurrentGameState implements GameState {
         return (pieceColor(piece) == turnColor);
     } //isColor
 
+    /**
+     * Checks if the current game state is a legal position.
+     */
+    public boolean isLegal() {
+        return true;
+    }
+
     public GameState[] nextMoves() {
         /* Create an array to store all possible next moves, and an integer to store the current number of moves in the array. */
         GameState[] nextPositions = new GameState[50];
@@ -221,7 +228,7 @@ public class CurrentGameState implements GameState {
          the specific color given as pieceType is irrelevant, since that bit will not be looked at */
         switch (piece) {
             case (PieceTypes.WHITE_PAWN | PieceTypes.BLACK_PAWN):
-                pieceMoves = PieceMoves.pawnMoves(square, color);
+                pieceMoves = PieceMoves.pawnMoves(square, color, this);
                 break;
             case (PieceTypes.WHITE_KNIGHT | PieceTypes.BLACK_KNIGHT):
                 pieceMoves = PieceMoves.knightMoves(square, color);
