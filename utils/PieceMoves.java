@@ -4,7 +4,30 @@ import java.util.Arrays;
 public class PieceMoves {
 
     public static GameState[] promotePiece(int startingSquare, int endingSquare, GameState originalGameState) {
-        GameState[] promotionMoves = new GameState[10];
+        GameState[] promotionMoves = new GameState[4];
+        GameState newGameState = originalGameState;
+        GameState newGameStateTwo = originalGameState;
+        GameState newGameStateThree = originalGameState;
+        GameState newGameStateFour = originalGameState;
+
+
+        /*Need to check for piece color */
+        newGameState.setSquare(endingSquare, PieceTypes.WHITE_KNIGHT);
+        newGameState.setSquare(startingSquare, PieceTypes.EMPTY);
+        promotionMoves[0] = newGameState;
+
+        newGameStateTwo.setSquare(endingSquare, PieceTypes.WHITE_BISHOP);
+        newGameStateTwo.setSquare(startingSquare, PieceTypes.EMPTY);
+        promotionMoves[1] = newGameState;
+
+        newGameStateThree.setSquare(endingSquare, PieceTypes.WHITE_ROOK);
+        newGameStateThree.setSquare(startingSquare, PieceTypes.EMPTY);
+        promotionMoves[2] = newGameState;
+
+        newGameStateFour.setSquare(endingSquare, PieceTypes.WHITE_QUEEN);
+        newGameStateFour.setSquare(startingSquare, PieceTypes.EMPTY);
+        promotionMoves[3] = newGameState;
+
         return promotionMoves;
     }
 
@@ -46,13 +69,16 @@ public class PieceMoves {
 
         /* If it can reach the promotion square, expand the number of possible moves. */
         if (reachPromotionSquare) {
-            pawnMoves = Arrays.copyOf(pawnMoves, 10);
+            pawnMoves = Arrays.copyOf(pawnMoves, 12);
         } //if
 
         /* Create the forward moves if nothing is in front. */
         if (currentState.getSquare(forward) == PieceTypes.EMPTY) {
             if (reachPromotionSquare) {
-                promotePiece(square, forward, currentState);
+                for (int i = 0; i < 4; i++) {
+                    pawnMoves[numMoves] = promotePiece(square, forward, currentState)[i];
+                    numMoves++;
+                } //for
             } else {
                 pawnMoves[numMoves] = movePiece(square, forward, currentState);
                 numMoves++;
@@ -72,17 +98,30 @@ public class PieceMoves {
             byte piece = currentState.getSquare(capture);
             /* Check if there is an opponents piece on the capture square. */
             if ((piece != PieceTypes.EMPTY) && (Board.pieceColor(piece) != color)) {
-                pawnMoves[numMoves] = movePiece(square, capture, currentState);
+                if (reachPromotionSquare) {
+                    for (int i = 0; i < 4; i++) {
+                        pawnMoves[numMoves] = promotePiece(square, capture, currentState)[i];
+                        numMoves++;
+                    } //for
+                } else { 
+                    pawnMoves[numMoves] = movePiece(square, capture, currentState);
+                    numMoves++;
+                } //if/else
             } //if
         } //for
 
+
         //Need to add en passant.
+
+
         return pawnMoves;
     }
 
     public static GameState[] knightMoves(int square, byte color) {
         /* A knight can only move a maximum of 8 ways. */
         GameState[] knightMoves = new GameState[8];
+
+
         return knightMoves;
     }
 
