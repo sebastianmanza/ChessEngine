@@ -225,25 +225,19 @@ public class Board implements GameState {
         /* Check the type of the piece and generate the appropriate moves. Note that for slideMoves,
          the specific color given as pieceType is irrelevant, since that bit will not be looked at */
         switch (piece) {
-            case (PieceTypes.WHITE_PAWN | PieceTypes.BLACK_PAWN):
+            case (PieceTypes.WHITE_PAWN | PieceTypes.BLACK_PAWN) ->
                 pieceMoves = PieceMoves.pawnMoves(square, color, this);
-                break;
-            case (PieceTypes.WHITE_KNIGHT | PieceTypes.BLACK_KNIGHT):
+            case (PieceTypes.WHITE_KNIGHT | PieceTypes.BLACK_KNIGHT) ->
                 pieceMoves = PieceMoves.knightMoves(square, color, this);
-                break;
-            case (PieceTypes.WHITE_BISHOP | PieceTypes.BLACK_BISHOP):
+            case (PieceTypes.WHITE_BISHOP | PieceTypes.BLACK_BISHOP) ->
                 pieceMoves = PieceMoves.slideMoves(square, color, PieceTypes.WHITE_BISHOP, this);
-                break;
-            case (PieceTypes.WHITE_ROOK | PieceTypes.BLACK_ROOK):
+            case (PieceTypes.WHITE_ROOK | PieceTypes.BLACK_ROOK) ->
                 pieceMoves = PieceMoves.slideMoves(square, color, PieceTypes.WHITE_ROOK, this);
-                break;
-            case (PieceTypes.WHITE_QUEEN | PieceTypes.BLACK_QUEEN):
+            case (PieceTypes.WHITE_QUEEN | PieceTypes.BLACK_QUEEN) ->
                 pieceMoves = PieceMoves.slideMoves(square, color, PieceTypes.WHITE_QUEEN, this);
-                break;
-            case (PieceTypes.WHITE_KING | PieceTypes.BLACK_KING):
-                pieceMoves = PieceMoves.kingMoves(square, color);
-                break;
-            default:
+            case (PieceTypes.WHITE_KING | PieceTypes.BLACK_KING) ->
+                pieceMoves = PieceMoves.kingMoves(square, color, this);
+            default ->
                 throw new AssertionError();
         } //switch
         return pieceMoves;
