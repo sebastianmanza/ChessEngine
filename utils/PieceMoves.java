@@ -244,9 +244,9 @@ public class PieceMoves {
         int row = square % 8;
         int col = square / 8;
 
-        int[] kingOffsets = {-9, -8, -7, -1, 1, 7, 8, 9};
+        int[] adjMoves = {-9, -8, -7, -1, 1, 7, 8, 9};
 
-        for (int move : kingOffsets) {
+        for (int move : adjMoves) {
             int endingSquare = square + move;
             int endingRow = endingSquare % 8;
             int endingCol = endingSquare / 8;

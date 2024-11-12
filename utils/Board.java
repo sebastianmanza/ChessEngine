@@ -178,10 +178,81 @@ public class Board implements GameState {
     } //isColor
 
     /**
-     * Checks if the current game state is a legal position.
+     * Checks if the game state is a legal position. If the king is in check,
+     * the position is not legal.
      */
     public boolean isLegal() {
+        int[] straightMoves = {-8, -1, 1, 8};
+        int[] diagMoves = {-9, -7, 7, 9};
+        int[] LMoves = {-17, -15, -10, -6, 6, 10, 15, 17};
+        int[] pawnCaptures = {-7, 7};
+        int[] kingMoves = {-9, -8, -7, -1, 1, 7, 8, 9};
+
+        int kingSquare = 0;
+
+        /* Set the piece to the king we're looking for, and the opposing pieces correctly. */
+        byte piece = PieceTypes.BLACK_KING;
+        byte oppPawn = PieceTypes.WHITE_PAWN;
+        byte oppKnight = PieceTypes.WHITE_KNIGHT;
+
+        if (this.turnColor == PieceTypes.WHITE) {
+            piece = PieceTypes.WHITE_KING;
+            oppPawn = PieceTypes.BLACK_PAWN;
+            oppKnight = PieceTypes.BLACK_KNIGHT;
+        } //if
+
+        /* Find the correct kings square. */
+        for (int i = 0; i < 64; i++) {
+            if (this.getSquare(i) == piece) {
+                kingSquare = i;
+                break;
+            } //if
+        } //if
+
+        int row = kingSquare % 8;
+        int col = kingSquare / 8;
+
+        if (piece == PieceTypes.WHITE_KING) {
+            /* Check if the king is in check from any pawns. */
+            for (int move : pawnCaptures) {
+                if ((kingSquare + move <= 63) && (kingSquare + move >= 0) && (getSquare(kingSquare + move) == oppPawn)) {
+                    return false;
+                } //if
+            } //for
+
+            /* Check if the king is in check from any knights */
+            for (int move : LMoves) {
+                int endingSquare = kingSquare + move;
+                int endingRow = endingSquare % 8;
+                int endingCol = endingSquare / 8;
+                byte endingPiece = getSquare(endingSquare);
+
+                /* Checks to make sure it doesn't wrap around, is in bounds, and is a black knight*/
+                if ((Math.abs(endingRow - row) <= 2)
+                        && (Math.abs(endingCol - col) <= 2)
+                        && ((endingSquare >= 0) && (endingSquare <= 63))
+                        && (endingPiece == oppKnight)) {
+                    return false;
+                } //if
+            }
+
+            /* Check if the king is in check from any rooks or queens. This occurs if the first piece it sees in any straight direction
+             * is an opposite rook or queen.
+             */
+            for (int move : straightMoves) {
+                return false;
+            }
+            /* Check if the king is in check from any bishops or queens. See above, but diagonal */
+            for (int move : diagMoves) {
+                return false;
+            }
+            /* Check if it is in check from the opposing king. */
+            for (int move : kingMoves) {
+                return false;
+            }
+        }
         return true;
+
     }
 
     public GameState[] nextMoves() {
