@@ -3,8 +3,12 @@ package utils.MCTUtils;
 import utils.GameState;
 public class MCNode {
 
-    public MCNode (GameState curState) {
+    public MCNode (GameState curState, MCNode parentState) {
         this.currentState = curState;
+        this.wins = 0.0;
+        this.playOuts = 0;
+        this.lastState = parentState;
+
     }
     /**
      * The current move/game state

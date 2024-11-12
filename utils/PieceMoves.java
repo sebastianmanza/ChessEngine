@@ -262,6 +262,6 @@ public class PieceMoves {
                 numMoves++;
             } //if
         } //for
-        return kingMoves;
+        return Arrays.copyOfRange(kingMoves, 0, numMoves);
     } //kingMoves
 } //class PieceMoves
