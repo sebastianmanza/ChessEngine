@@ -1,9 +1,9 @@
 package utils.MCTUtils;
 
-import utils.GameState;
+import utils.Board;
 public class MCNode {
 
-    public MCNode (GameState curState, MCNode parentState) {
+    public MCNode (Board curState, MCNode parentState) {
         this.currentState = curState;
         this.wins = 0.0;
         this.playOuts = 0;
@@ -13,7 +13,7 @@ public class MCNode {
     /**
      * The current move/game state
      */
-    public GameState currentState;
+    public Board currentState;
     /**
      * The list of all possible nextMoves
      */

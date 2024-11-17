@@ -3,7 +3,7 @@ package utils;
 import java.io.PrintWriter;
 import java.util.Arrays;
 
-public class Board implements GameState {
+public class Board {
 
     /**
      * An integer representing the number of columns.
@@ -49,9 +49,9 @@ public class Board implements GameState {
 
         /* Clears the half of the byte that the piece will be stored on, and shifts the piece appropriately */
         if (highNibble) {
-            this.board[col][row] = (byte) ((this.board[col][row] & 0x0f) | (piece << 4));
+            this.board[col][row] = (byte) ((this.board[col][row] & 0x0f) | ((piece & 0x0F) << 4));
         } else {
-            this.board[col][row] = (byte) ((this.board[col][row] & 0xF0) | piece);
+            this.board[col][row] = (byte) ((this.board[col][row] & 0xF0) | piece & 0x0f);
         } // if/else
     } // setSquare
 
@@ -61,16 +61,13 @@ public class Board implements GameState {
         int row = (square % 8) / 2;
         /* Create a boolean checking which nibble the square is in. */
         boolean highNibble = (square % 2 == 0);
-        byte piece;
 
         /* Builds the piece by returning the proper half of the byte */
         if (highNibble) {
-            piece = (byte) (this.board[col][row] & 0xf0);
-            return (byte) (piece >> 4);
+            return (byte) ((this.board[col][row] & 0xF0) >>> 4);
         } else {
-            piece = (byte) (this.board[col][row] & 0x0f);
-            return piece;
-        } //if/else
+            return (byte) (this.board[col][row] & 0x0F);
+        }
     } //getSquare
 
     public void startingPos() {
@@ -194,11 +191,17 @@ public class Board implements GameState {
         byte piece = PieceTypes.BLACK_KING;
         byte oppPawn = PieceTypes.WHITE_PAWN;
         byte oppKnight = PieceTypes.WHITE_KNIGHT;
+        byte oppRook = PieceTypes.WHITE_ROOK;
+        byte oppQueen = PieceTypes.WHITE_QUEEN;
 
         if (this.turnColor == PieceTypes.WHITE) {
             piece = PieceTypes.WHITE_KING;
             oppPawn = PieceTypes.BLACK_PAWN;
             oppKnight = PieceTypes.BLACK_KNIGHT;
+            oppRook = PieceTypes.BLACK_ROOK;
+            oppQueen = PieceTypes.BLACK_QUEEN;
+
+
         } //if
 
         /* Find the correct kings square. */
@@ -212,52 +215,87 @@ public class Board implements GameState {
         int row = kingSquare % 8;
         int col = kingSquare / 8;
 
-        if (piece == PieceTypes.WHITE_KING) {
-            /* Check if the king is in check from any pawns. */
-            for (int move : pawnCaptures) {
-                if ((kingSquare + move <= 63) && (kingSquare + move >= 0) && (getSquare(kingSquare + move) == oppPawn)) {
-                    return false;
-                } //if
-            } //for
-
-            /* Check if the king is in check from any knights */
-            for (int move : LMoves) {
-                int endingSquare = kingSquare + move;
-                int endingRow = endingSquare % 8;
-                int endingCol = endingSquare / 8;
-                byte endingPiece = getSquare(endingSquare);
-
-                /* Checks to make sure it doesn't wrap around, is in bounds, and is a black knight*/
-                if ((Math.abs(endingRow - row) <= 2)
-                        && (Math.abs(endingCol - col) <= 2)
-                        && ((endingSquare >= 0) && (endingSquare <= 63))
-                        && (endingPiece == oppKnight)) {
-                    return false;
-                } //if
-            }
-
-            /* Check if the king is in check from any rooks or queens. This occurs if the first piece it sees in any straight direction
-             * is an opposite rook or queen.
-             */
-            for (int move : straightMoves) {
+        /* Check if the king is in check from any pawns. */
+        for (int move : pawnCaptures) {
+            if ((kingSquare + move <= 63) && (kingSquare + move >= 0) && (getSquare(kingSquare + move) == oppPawn)) {
                 return false;
-            }
-            /* Check if the king is in check from any bishops or queens. See above, but diagonal */
-            for (int move : diagMoves) {
+            } //if
+        } //for
+
+        /* Check if the king is in check from any knights */
+        for (int move : LMoves) {
+            int endingSquare = kingSquare + move;
+            int endingRow = endingSquare % 8;
+            int endingCol = endingSquare / 8;
+            byte endingPiece = getSquare(endingSquare);
+
+            /* Checks to make sure it doesn't wrap around, is in bounds, and is a opposing knight*/
+            if ((Math.abs(endingRow - row) <= 2)
+                    && (Math.abs(endingCol - col) <= 2)
+                    && ((endingSquare >= 0) && (endingSquare <= 63))
+                    && (endingPiece == oppKnight)) {
                 return false;
-            }
-            /* Check if it is in check from the opposing king. */
-            for (int move : kingMoves) {
-                return false;
-            }
+            } //if
+        } //for
+
+        /* Check if the king is in check from any rooks or queens. This occurs if the first piece it sees in any straight direction
+         * is an opposite rook or queen.
+         */
+        for (int move : straightMoves) {
+            int endingSquare = kingSquare + move;
+            int endingRow = endingSquare % 8;
+            int endingCol = endingSquare / 8;
+            byte endingPiece = getSquare(endingSquare);
+
+            /*Checks that it doesn't wrap around, is in legal bounds, and is an opposing R or Q*/
+                            /* Continue moving the piece in the direction hile it can */
+                            while (true) {
+                                endingSquare += move;
+                                endingRow = endingSquare % 8;
+                                endingCol = endingSquare / 8;
+                                endingPiece = this.getSquare(endingSquare);
+            
+                                /* Either the columns or the rows must still be the same to avoid a wraparound. */
+                                if (endingCol != col && endingRow != row) {
+                                    break;
+                                } //if
+            
+                                /* Check that it remains within bounds. */
+                                if ((endingSquare > 63 || (endingSquare < 0))) {
+                                    break;
+                                } //if
+            
+                                /* Check that the square is either empty or an opposing color. */
+                                if (endingSquare != PieceTypes.EMPTY && pieceColor(endingPiece) == this.turnColor) {
+                                    break;
+                                } //if
+            
+                                /* If it was an opponents piece, it can't go any further */
+                                if (Board.pieceColor(endingPiece) != this.turnColor) {
+                                    if (endingPiece == oppQueen || endingPiece == oppRook) {
+                                        return false;
+                                    } //if
+                                    break;
+                                } //if
+                            } //while(true)
+
+            return false;
+        }
+        /* Check if the king is in check from any bishops or queens. See above, but diagonal */
+        for (int move : diagMoves) {
+            return false;
+        }
+        /* Check if it is in check from the opposing king. */
+        for (int move : kingMoves) {
+            return false;
         }
         return true;
 
     }
 
-    public GameState[] nextMoves() {
+    public Board[] nextMoves() {
         /* Create an array to store all possible next moves, and an integer to store the current number of moves in the array. */
-        GameState[] nextPositions = new GameState[50];
+        Board[] nextPositions = new Board[50];
         int numPossibleMoves = 0;
 
         /* Loop through the board to check all the pieces */
@@ -270,10 +308,10 @@ public class Board implements GameState {
             } //if
 
             /* Create a new array for all the possible moves of that piece */
-            GameState[] pieceMoves = this.generatePieceMoves(piece, square);
+            Board[] pieceMoves = this.generatePieceMoves(piece, square);
 
             /* Add legal game states (those where the king is not in check) to the master list of nextPositions */
-            for (GameState pieceMove : pieceMoves) {
+            for (Board pieceMove : pieceMoves) {
                 if (pieceMove.isLegal()) {
                     nextPositions[numPossibleMoves] = pieceMove;
                     numPossibleMoves++;
@@ -282,31 +320,30 @@ public class Board implements GameState {
                         Arrays.copyOf(nextPositions, numPossibleMoves * 2);
                     } //if
                 } //if
-
             } //for
         } //for
         return nextPositions;
     } //nextMoves
 
-    public GameState[] generatePieceMoves(byte piece, int square) {
+    public Board[] generatePieceMoves(byte piece, int square) {
         /* Create a new array that will return the types. */
-        GameState[] pieceMoves;
+        Board[] pieceMoves;
         byte color = pieceColor(piece);
 
         /* Check the type of the piece and generate the appropriate moves. Note that for slideMoves,
          the specific color given as pieceType is irrelevant, since that bit will not be looked at */
         switch (piece) {
-            case (PieceTypes.WHITE_PAWN | PieceTypes.BLACK_PAWN) ->
+            case PieceTypes.WHITE_PAWN, PieceTypes.BLACK_PAWN ->
                 pieceMoves = PieceMoves.pawnMoves(square, color, this);
-            case (PieceTypes.WHITE_KNIGHT | PieceTypes.BLACK_KNIGHT) ->
+            case PieceTypes.WHITE_KNIGHT, PieceTypes.BLACK_KNIGHT ->
                 pieceMoves = PieceMoves.knightMoves(square, color, this);
-            case (PieceTypes.WHITE_BISHOP | PieceTypes.BLACK_BISHOP) ->
+            case PieceTypes.WHITE_BISHOP, PieceTypes.BLACK_BISHOP ->
                 pieceMoves = PieceMoves.slideMoves(square, color, PieceTypes.WHITE_BISHOP, this);
-            case (PieceTypes.WHITE_ROOK | PieceTypes.BLACK_ROOK) ->
+            case PieceTypes.WHITE_ROOK, PieceTypes.BLACK_ROOK ->
                 pieceMoves = PieceMoves.slideMoves(square, color, PieceTypes.WHITE_ROOK, this);
-            case (PieceTypes.WHITE_QUEEN | PieceTypes.BLACK_QUEEN) ->
+            case PieceTypes.WHITE_QUEEN, PieceTypes.BLACK_QUEEN ->
                 pieceMoves = PieceMoves.slideMoves(square, color, PieceTypes.WHITE_QUEEN, this);
-            case (PieceTypes.WHITE_KING | PieceTypes.BLACK_KING) ->
+            case PieceTypes.WHITE_KING, PieceTypes.BLACK_KING ->
                 pieceMoves = PieceMoves.kingMoves(square, color, this);
             default ->
                 throw new AssertionError();
@@ -314,7 +351,7 @@ public class Board implements GameState {
         return pieceMoves;
     } //generatePieceMoves
 
-    public GameState copyGameState() {
+    public Board copyBoard() {
         Board returnState = new Board(this.turnColor, this.engineColor);
         for (int i = 0; i < 8; i++) {
             for (int j = 0; j < 4; j++) {
@@ -322,6 +359,6 @@ public class Board implements GameState {
             } //for
         } //for
         return returnState;
-    } //copyGameState()
+    } //copyBoard()
 
-} //CurrentGameState
+} //CurrentBoard
