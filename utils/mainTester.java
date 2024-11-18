@@ -10,7 +10,7 @@ public class mainTester {
         PrintWriter pen = new PrintWriter(System.out, true);
         /* Create a new board */
         Board board1 = new Board(PieceTypes.WHITE, PieceTypes.WHITE);
-        Board board2 = new Board(PieceTypes.WHITE, PieceTypes.WHITE);
+        Board board2 = new Board(PieceTypes.BLACK, PieceTypes.WHITE);
 
 
         /* Initialize all starting positions of a board */
@@ -20,6 +20,12 @@ public class mainTester {
         board2.setSquare(27, PieceTypes.WHITE_PAWN);
         board2.setSquare(30, PieceTypes.EMPTY);
         board2.setSquare(28, PieceTypes.BLACK_PAWN);
+        board2.setSquare(48, PieceTypes.EMPTY);
+        board2.setSquare(42, PieceTypes.WHITE_KNIGHT);
+        board2.setSquare(15, PieceTypes.EMPTY);
+        board2.setSquare(21, PieceTypes.BLACK_KNIGHT);
+        board2.setSquare(40, PieceTypes.EMPTY);
+        board2.setSquare(19, PieceTypes.WHITE_BISHOP);
 
         Board[] nextboards1 = board1.nextMoves();
 
@@ -34,16 +40,8 @@ public class mainTester {
             nextboards2[i].printBoard(pen);
             pen.println("");
         }
-        
-        /* Attempt to print all possible next boards. */
-        // for (int i = 0; i < nextboards.length; i++) {
-        //     nextboards[i].printBoard();
-        // }
         System.out.println(nextboards1.length);
-        System.out.println(nextboards2.length);
-
-        /* Print the baord, noting that "00" represents an incorrect byte. */
-        //board1.printBoard();
+        System.out.println(nextboards2.length);;
         pen.close();
     }
 }

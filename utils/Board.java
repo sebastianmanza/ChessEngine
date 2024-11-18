@@ -30,6 +30,11 @@ public class Board {
     public byte engineColor;
 
     /**
+     * Whether the game is over.
+     */
+    public boolean gameOver = false;
+
+    /**
      * Builds a new board representing the games current state.
      *
      * @param turnCol representing who's turn it currently is
@@ -39,6 +44,12 @@ public class Board {
         this.turnColor = turnCol;
         this.engineColor = engineCol;
     }
+
+    /**
+     * Sets a square on the board to a piece.
+     * @param square The square index to be set (0-63 inclusive)
+     * @param piece The piece type (defined in PieceTypes)
+     */
 
     public void setSquare(int square, byte piece) {
         /* Interpret the row and column based off of the square */
@@ -55,6 +66,11 @@ public class Board {
         } // if/else
     } // setSquare
 
+    /**
+     * Gets the piece on a specified square
+     * @param square The square index (0-63)
+     * @return The piece located on the square
+     */
     public byte getSquare(int square) {
         /* Interpret the row and column based off of the square */
         int col = square / 8;
@@ -70,6 +86,9 @@ public class Board {
         }
     } //getSquare
 
+    /**
+     * Sets the board to chess's default starting position.
+     */
     public void startingPos() {
         for (int i = 1; i < 58; i += 8) {
             setSquare(i, PieceTypes.WHITE_PAWN);
@@ -100,6 +119,11 @@ public class Board {
         setSquare(39, PieceTypes.BLACK_KING);
     } //startingPos
 
+    /**
+     * Prints the board in a basic textual form
+     * @param pen The printwriter object to write with
+     * @throws Exception if the piece on the square is not found
+     */
     public void printBoard(PrintWriter pen) throws Exception {
         for (int col = 7; col >= 0; col--) {
             for (int row = 0; row < 8; row++) {
@@ -133,7 +157,7 @@ public class Board {
                     case PieceTypes.BLACK_KING ->
                         piece = "BK";
                     default ->
-                        piece = "OO";
+                        throw new Exception("Piece not found.");
                 } //switch
                 pen.print("|" + piece);
             } //for
@@ -141,12 +165,19 @@ public class Board {
         } //for
     } //printBoard
 
+    /**
+     * Resets the board to empty squares.
+     */
     public void clearBoard() {
         for (int i = 0; i < 64; i++) {
             setSquare(i, PieceTypes.EMPTY);
         } //for
     } //clearBoard
 
+    /**
+     * Gets the board.
+     * @return the array representing just the board
+     */
     public byte[][] getBoard() {
         return this.board;
     } //getBoard();
@@ -171,6 +202,46 @@ public class Board {
     public static boolean isColor(byte piece, byte color) {
         return (pieceColor(piece) == color);
     } //isColor
+
+    /**
+     * Checks if the game is over.
+     *
+     * @return true if the game is over, else false
+     */
+    public boolean isGameOver() {
+        return (this.nextMoves().length == 0);
+    } //isGameOver
+
+    /**
+     * Calculates the number of points won or lost by the engine at the end of a game.
+     * @return 1.0 if the game was won, 0.0 if the game was lost, or 0.5 in the event of a stalemate or draw
+     */
+    public double vicPoints() {
+        if (kingCapture(PieceTypes.WHITE_KING) && engineColor == PieceTypes.WHITE) {
+            return 0.0;
+        } else if (kingCapture(PieceTypes.BLACK_KING) && engineColor == PieceTypes.BLACK) {
+            return 0.0;
+        } else if (kingCapture(PieceTypes.WHITE_KING) && engineColor == PieceTypes.BLACK) {
+            return 1.0;
+        } else if (kingCapture(PieceTypes.BLACK_KING) && engineColor == PieceTypes.WHITE) {
+            return 1.0;
+        } //if/else
+        return 0.5;
+    } //vicPoints()
+
+    /**
+     * Checks if the king has been captured
+     * @param kingColor The color of the king we are looking for
+     * @return true if the king is gone, otherwise false.
+     */
+    public boolean kingCapture(byte kingColor) {
+        for (int i = 0; i < 64; i++) {
+            if (getSquare(i) == kingColor) {
+                return false;
+            } //if
+        } //for
+        return true;
+    } //kingCapture
 
     /**
      * Checks if the game state is a legal position. If the king is in check,
@@ -198,7 +269,6 @@ public class Board {
             oppKnight = PieceTypes.BLACK_KNIGHT;
             oppRook = PieceTypes.BLACK_ROOK;
             oppQueen = PieceTypes.BLACK_QUEEN;
-
 
         } //if
 
@@ -246,36 +316,36 @@ public class Board {
             byte endingPiece = getSquare(endingSquare);
 
             /*Checks that it doesn't wrap around, is in legal bounds, and is an opposing R or Q*/
-                            /* Continue moving the piece in the direction hile it can */
-                            while (true) {
-                                endingSquare += move;
-                                endingRow = endingSquare % 8;
-                                endingCol = endingSquare / 8;
-                                endingPiece = this.getSquare(endingSquare);
-            
-                                /* Either the columns or the rows must still be the same to avoid a wraparound. */
-                                if (endingCol != col && endingRow != row) {
-                                    break;
-                                } //if
-            
-                                /* Check that it remains within bounds. */
-                                if ((endingSquare > 63 || (endingSquare < 0))) {
-                                    break;
-                                } //if
-            
-                                /* Check that the square is either empty or an opposing color. */
-                                if (endingSquare != PieceTypes.EMPTY && pieceColor(endingPiece) == this.turnColor) {
-                                    break;
-                                } //if
-            
-                                /* If it was an opponents piece, it can't go any further */
-                                if (Board.pieceColor(endingPiece) != this.turnColor) {
-                                    if (endingPiece == oppQueen || endingPiece == oppRook) {
-                                        return false;
-                                    } //if
-                                    break;
-                                } //if
-                            } //while(true)
+ /* Continue moving the piece in the direction hile it can */
+            while (true) {
+                endingSquare += move;
+                endingRow = endingSquare % 8;
+                endingCol = endingSquare / 8;
+                endingPiece = this.getSquare(endingSquare);
+
+                /* Either the columns or the rows must still be the same to avoid a wraparound. */
+                if (endingCol != col && endingRow != row) {
+                    break;
+                } //if
+
+                /* Check that it remains within bounds. */
+                if ((endingSquare > 63 || (endingSquare < 0))) {
+                    break;
+                } //if
+
+                /* Check that the square is either empty or an opposing color. */
+                if (endingSquare != PieceTypes.EMPTY && pieceColor(endingPiece) == this.turnColor) {
+                    break;
+                } //if
+
+                /* If it was an opponents piece, it can't go any further */
+                if (Board.pieceColor(endingPiece) != this.turnColor) {
+                    if (endingPiece == oppQueen || endingPiece == oppRook) {
+                        return false;
+                    } //if
+                    break;
+                } //if
+            } //while(true)
 
             return false;
         }
@@ -291,91 +361,49 @@ public class Board {
 
     }
 
-    // public Board[] nextMoves() {
-    //     /* Create an array to store all possible next moves, and an integer to store the current number of moves in the array. */
-    //     Board[] nextPositions = new Board[50];
-    //     int numPossibleMoves = 0;
-    
-    //     /* Loop through the board to check all the pieces */
-    //     for (int square = 0; square < 64; square++) {
-    //         byte piece = getSquare(square);
-    
-    //         /* If the square is empty, or its an opponents piece, don't bother looking at the moves. */
-    //         if (piece == PieceTypes.EMPTY || !isColor(piece, this.turnColor)) {
-    //             continue;
-    //         } //if
-    
-    //         /* Create a new array for all the possible moves of that piece */
-    //         Board[] pieceMoves = this.generatePieceMoves(piece, square);
-    
-    //         /* Skip if no moves are generated */
-    //         if (pieceMoves == null || pieceMoves.length == 0) {
-    //             continue;
-    //         } //if
-    
-    //         /* Add legal game states (those where the king is not in check) to the master list of nextPositions */
-    //         for (Board pieceMove : pieceMoves) {
-    //             if (pieceMove.isLegal()) {
-    //                 nextPositions[numPossibleMoves] = pieceMove;
-    //                 numPossibleMoves++;
-    //                 if (numPossibleMoves >= nextPositions.length) {
-    //                     /* Expand the array if it's full. */
-    //                     nextPositions = Arrays.copyOf(nextPositions, numPossibleMoves * 2);
-    //                 } //if
-    //             } //if
-    //         } //for
-    //     } //for
-    
-    //     /* Return only the legal game states in a correctly sized array */
-    //     return Arrays.copyOf(nextPositions, numPossibleMoves);
-    // } //nextMoves
-
+    /**
+     * Creates an array of all possible next moves from this position.
+     * @return All possible next moves.
+     */
     public Board[] nextMoves() {
         /* Create an array to store all possible next moves, and an integer to store the current number of moves in the array. */
         Board[] nextPositions = new Board[50];
         int numPossibleMoves = 0;
-    
         /* Loop through the board to check all the pieces */
         for (int square = 0; square < 64; square++) {
             byte piece = getSquare(square);
-    
-            /* Debug: Log the piece found at this square */
-            System.out.println("Checking piece at square " + square + ": " + piece);
-    
-            /* If the square is empty, or it's an opponent's piece, skip it. */
+            /* If the square is empty, or its an opponents piece, don't bother looking at the moves. */
             if (piece == PieceTypes.EMPTY || !isColor(piece, this.turnColor)) {
                 continue;
             } //if
-    
-            /* Generate possible moves for this piece */
+            /* Create a new array for all the possible moves of that piece */
             Board[] pieceMoves = this.generatePieceMoves(piece, square);
-    
-            /* Debug: Log moves generated for this piece */
+            /* Skip if no moves are generated */
             if (pieceMoves == null || pieceMoves.length == 0) {
-                System.out.println("No moves generated for piece at square " + square);
                 continue;
-            }
-    
+            } //if
             /* Add legal game states (those where the king is not in check) to the master list of nextPositions */
             for (Board pieceMove : pieceMoves) {
-                // if (pieceMove.isLegal()) {
+                if (pieceMove.isLegal()) {
                     nextPositions[numPossibleMoves] = pieceMove;
                     numPossibleMoves++;
                     if (numPossibleMoves >= nextPositions.length) {
                         /* Expand the array if it's full. */
                         nextPositions = Arrays.copyOf(nextPositions, numPossibleMoves * 2);
                     } //if
-                //} //if
+                } //if
             } //for
         } //for
-    
-        /* Debug: Log the number of moves found */
-        System.out.println("Total moves found: " + numPossibleMoves);
-    
         /* Return only the legal game states in a correctly sized array */
         return Arrays.copyOf(nextPositions, numPossibleMoves);
     } //nextMoves
-    
+
+    /**
+     * Generates an array of all possible moves by a particular piece on the board. 
+     * @param piece
+     * @param square
+     * @return
+     */
     public Board[] generatePieceMoves(byte piece, int square) {
         /* Create a new array that will return the types. */
         Board[] pieceMoves;

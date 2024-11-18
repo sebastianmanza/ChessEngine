@@ -4,7 +4,7 @@ import java.util.Comparator;
 import java.util.Random;
 
 import java.lang.Math;
-import utils.GameState;
+import utils.Board;
 
 import utils.MCTUtils.MCNode;
 
@@ -22,18 +22,19 @@ public class MCT {
     /** Creates a new Monte Carlo Treee
      * @param currentMove The most recent move made.
      */
-    public MCT(GameState currentMove) {
-        this.root = new MCNode(currentMove);
+    public MCT(Board currentMove) {
+        this.root = new MCNode(currentMove, null);
     }
+
     /* Stores the current best move that can be made */
-    GameState bestMove;
+    Board bestMove;
 
     /**
      * Searches for the best possible move to be made from the current game state.
      * @param iterations The number of iterations to attempt
      * @return The best possible move
      */
-    public GameState search(int iterations) {
+    public Board search(int iterations) {
         for (int i = 0; i < iterations; i++) {
             MCNode selectedNode = select(root);
             MCNode expandedNode = expand(selectedNode);
@@ -41,7 +42,7 @@ public class MCT {
             backPropagate(expandedNode, winPoints, root);
 
             /* Find and update the best move amongst all nextMoves from the root */
-            bestMove = Collections.max(root.nextMoves, Comparator.comparingInt(n -> n.totalPlayOuts)).currentMove;
+            bestMove = Collections.max(root.nextMoves, Comparator.comparingInt(n -> n.playOuts)).currentState;
         } // for
          return bestMove;
     } //search(iterations)
@@ -52,7 +53,7 @@ public class MCT {
      * @return The value of the node
      */
     public static double UCT(MCNode node) {
-        double result = node.totalWins / node.totalPlayOuts + EXPLORATION_PARAM * Math.sqrt((Math.log(node.lastMove.totalPlayOuts)) / node.totalPlayOuts);
+        double result = node.wins / node.playOuts + EXPLORATION_PARAM * Math.sqrt((Math.log(node.lastMove.playOuts)) / node.playOuts);
         return result;
     } //UCT(node)
     
@@ -61,13 +62,15 @@ public class MCT {
      * @param node The beginning node.
      * @return The best possible node from the beginning node.
      */
-    public static MCNode select(MCNode root) {
-        MCNode curNode = root;
-        while (hasExploredChildren) {
-            curNode = Collections.max(curNode.nextMoves, Comparator.comparingDouble(n -> UCT(n)));
+    public static MCNode select(MCNode node) {
+        while (!node.currentState.isGameOver()) {
+            if (node.nextMoves.isEmpty()) {
+                return node;
+            } //if
+            node = Collections.max(node.nextMoves, Comparator.comparingDouble(MCT::UCT));
         } //while
-        return curNode;
-    } // select(root)
+        return node;
+    } // select(MCNode)
 
     /**
      * Expands the tree one level deeper to continue searching
@@ -76,6 +79,12 @@ public class MCT {
      */
     public static MCNode expand(MCNode node) {
         Random randomChild = new Random();
+        /* Add all possible children to the node */
+        Board[] gameStates = node.currentState.nextMoves();
+        for (Board gameState : gameStates) {
+            MCNode newNode = new MCNode(gameState, node);
+            node.nextMoves.add(newNode);
+        } //for
         /* Grab a random child from the tree */
         return node.nextMoves.get(randomChild.nextInt(node.nextMoves.size()));
     } //expand(node)
@@ -89,13 +98,14 @@ public class MCT {
      */
     public static double simulate(MCNode node) {
         Random ranMove = new Random();
-        MCNode curMove = node;
+        MCNode gameState = node;
         /* Run the loop while the game is undecided */
-        while(!origGameState.gameFinished(curMove)) {
-            /* take a random move and play from that position */
-            curMove = curMove.nextMoves.get(ranMove.nextInt(curMove.nextMoves.size()));
+        while(!gameState.currentState.isGameOver()) {
+            Board[] gameStates = node.currentState.nextMoves();
+            MCNode nextNode = new MCNode(gameStates[ranMove.nextInt(gameStates.length)], gameState);
+            gameState = nextNode;
         } // while
-        return curMove.vicPoints();
+        return gameState.currentState.vicPoints();
     } //simulate
 
     /**
@@ -106,8 +116,8 @@ public class MCT {
     public static void backPropagate(MCNode node, double winPoints, MCNode root) {
         MCNode curNode = node;
         while(curNode != root) {
-            curNode.totalPlayOuts++;
-            curNode.totalWins += winPoints;
+            curNode.playOuts++;
+            curNode.wins += winPoints;
             curNode = curNode.lastMove;
         } // while
     } // backPropogate(node, winPoints, root)
