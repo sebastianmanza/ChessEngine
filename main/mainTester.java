@@ -1,5 +1,8 @@
-package utils;
+package main;
 import java.io.PrintWriter;
+import utils.Board;
+import utils.PieceTypes;
+import utils.MCTUtils.MCT;
 /**
  * A class to test some functions.
  * @author Sebastian Manza
@@ -13,7 +16,7 @@ public class mainTester {
         Board board2 = new Board(PieceTypes.BLACK, PieceTypes.WHITE);
 
 
-        /* Initialize all starting positions of a board */
+        /* Initialize all starting positions of the boards*/
         board1.startingPos();
         board2.startingPos();
         board2.setSquare(33, PieceTypes.EMPTY);
@@ -34,13 +37,23 @@ public class mainTester {
         //     pen.println("");
         // }
 
-        Board[] nextboards2 = board2.nextMoves();
+        // Board[] nextboards2 = board2.nextMoves();
 
-        board2.printBoard(pen);
-        for (int i = 0; i < nextboards2.length; i++) {
-            nextboards2[i].printBoard(pen);
-            pen.println("");
-        }
+        // pen.println("----------------");
+        // pen.println("----------------");
+
+        // board2.printBoard(pen);
+        // for (int i = 0; i < nextboards2.length; i++) {
+        //     nextboards2[i].printBoard(pen);
+        //     pen.println("----------------");
+        // }
+        // pen.println(nextboards2.length);
+
+        /* Initialize a MCT */
+        MCT searchTree = new MCT(board1);
+        
+        Board bestMove = searchTree.search(1);
+        bestMove.printBoard(pen);
 
         pen.close();
     }

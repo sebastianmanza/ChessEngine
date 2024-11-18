@@ -1,6 +1,8 @@
 package utils;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 public class PieceMoves {
 
@@ -149,9 +151,8 @@ public class PieceMoves {
     } //knightMoves
 
     public static Board[] slideMoves(int square, byte color, byte pieceType, Board currentState) {
-        /* The queen can move 28 different ways if placed correctly. */
-        Board[] slideMoves = new Board[28];
-        int numMoves = 0;
+        /* The queen can move 28 different ways if placed correctly, so lets dynamically size it */
+        List<Board> slideMoves = new ArrayList<>();
 
         int endingSquare;
         int endingCol;
@@ -171,7 +172,7 @@ public class PieceMoves {
             for (int move : straightMoves) {
                 endingSquare = square;
 
-                /* Continue moving the piece in the direction hile it can */
+                /* Continue moving the piece in the direction while it can */
                 while (true) {
                     endingSquare += move;
                     endingRow = endingSquare % 8;
@@ -194,8 +195,7 @@ public class PieceMoves {
                         break;
                     } //if
 
-                    slideMoves[numMoves] = movePiece(square, endingSquare, currentState);
-                    numMoves++;
+                    slideMoves.add(movePiece(square, endingSquare, currentState));
 
                     /* If it was an opponents piece, it can't go any further */
                     if (Board.pieceColor(pieceOnSquare) != color) {
@@ -235,17 +235,16 @@ public class PieceMoves {
                         break;
                     } //if
 
-                    slideMoves[numMoves] = movePiece(square, endingSquare, currentState);
-                    numMoves++;
+                    slideMoves.add(movePiece(square, endingSquare, currentState));
 
                     /* If it was an opponents piece, it can't go any further */
-                    if (Board.pieceColor(pieceOnSquare) != color) {
+                    if (pieceOnSquare != PieceTypes.EMPTY && Board.pieceColor(pieceOnSquare) != color) {
                         break;
                     } //if
                 } //while(true)
             } //for
         } //if
-        return Arrays.copyOfRange(slideMoves, 0, numMoves);
+        return slideMoves.toArray(new Board[0]);
     } //slideMoves
 
     public static Board[] kingMoves(int square, byte color, Board currentState) {
@@ -260,13 +259,16 @@ public class PieceMoves {
             int endingSquare = square + move;
             int endingRow = endingSquare % 8;
             int endingCol = endingSquare / 8;
+
+            if ((endingSquare < 0) && (endingSquare > 63)) {
+                continue;
+            } //if
             byte piece = currentState.getSquare(endingSquare);
 
             /* The move is valid if it is in bounds, and either to an empty square or to a square with an opponent piece.
              * It also must be within 1 row and 1 column, or it has wrapped around. */
             if ((Math.abs(endingRow - row) <= 1)
                     && (Math.abs(endingCol - col) <= 1)
-                    && ((endingSquare >= 0) && (endingSquare <= 63))
                     && ((piece == PieceTypes.EMPTY) || (Board.pieceColor(piece) != color))) {
                 kingMoves[numMoves] = movePiece(square, endingSquare, currentState);
                 numMoves++;

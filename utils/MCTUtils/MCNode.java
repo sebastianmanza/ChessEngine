@@ -35,7 +35,7 @@ public class MCNode {
     public MCNode (Board curState, MCNode parentNode) {
         this.currentState = curState;
         this.wins = 0.0;
-        this.playOuts = 0;
+        this.playOuts = 1;
         this.lastMove = parentNode;
         this.nextMoves = new ArrayList<>();
     } //MCNode(Board, MCNode)
