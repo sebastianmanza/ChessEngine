@@ -1,5 +1,5 @@
 package utils;
-
+import java.io.PrintWriter;
 /**
  * A class to test some functions.
  * @author Sebastian Manza
@@ -7,27 +7,43 @@ package utils;
 public class mainTester {
 
     public static void main(String[] args) throws Exception {
+        PrintWriter pen = new PrintWriter(System.out, true);
         /* Create a new board */
         Board board1 = new Board(PieceTypes.WHITE, PieceTypes.WHITE);
+        Board board2 = new Board(PieceTypes.WHITE, PieceTypes.WHITE);
+
 
         /* Initialize all starting positions of a board */
         board1.startingPos();
+        board2.startingPos();
+        board2.setSquare(25, PieceTypes.EMPTY);
+        board2.setSquare(27, PieceTypes.WHITE_PAWN);
+        board2.setSquare(30, PieceTypes.EMPTY);
+        board2.setSquare(28, PieceTypes.BLACK_PAWN);
 
-        Board[] nextboards = board1.nextMoves();
+        Board[] nextboards1 = board1.nextMoves();
 
-        for (int i = 0; i < nextboards.length; i++) {
-            nextboards[i].printBoard();
+        for (int i = 0; i < nextboards1.length; i++) {
+            nextboards1[i].printBoard(pen);
+            pen.println("");
         }
 
-        /* Print a specific location in the array (in this case should print the location representing the a7 
-        and a8 squares, which should be a BP and BR). Note that in this case it should print 10011100, however
-        in setting the a7 square, seems to bug. */
-        System.out.println(board1.getBoard()[0][3]);
-        System.out.println(Integer.toBinaryString(board1.getBoard()[0][3]));
-        /* Set a square that is represented by an upper nibble to a black piece to exhibit the bug clearly again. */
-        board1.setSquare(36, PieceTypes.BLACK_PAWN);
+        Board[] nextboards2 = board2.nextMoves();
+
+        for (int i = 0; i < nextboards2.length; i++) {
+            nextboards2[i].printBoard(pen);
+            pen.println("");
+        }
+        
+        /* Attempt to print all possible next boards. */
+        // for (int i = 0; i < nextboards.length; i++) {
+        //     nextboards[i].printBoard();
+        // }
+        System.out.println(nextboards1.length);
+        System.out.println(nextboards2.length);
 
         /* Print the baord, noting that "00" represents an incorrect byte. */
-        board1.printBoard();
+        //board1.printBoard();
+        pen.close();
     }
 }
