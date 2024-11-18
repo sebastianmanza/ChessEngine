@@ -1,15 +1,15 @@
 package main;
 import java.io.PrintWriter;
 import utils.Board;
-import utils.PieceTypes;
 import utils.MCTUtils.MCT;
+import utils.PieceTypes;
 /**
  * A class to test some functions.
  * @author Sebastian Manza
  */
 public class mainTester {
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
         PrintWriter pen = new PrintWriter(System.out, true);
         /* Create a new board */
         Board board1 = new Board(PieceTypes.WHITE, PieceTypes.WHITE);
@@ -50,11 +50,14 @@ public class mainTester {
         // pen.println(nextboards2.length);
 
         /* Initialize a MCT */
+        try{
         MCT searchTree = new MCT(board1);
         
         Board bestMove = searchTree.search(1);
         bestMove.printBoard(pen);
-
+        } catch (Exception e) {
+            e.printStackTrace(System.err);
+        }
         pen.close();
     }
 }

@@ -290,13 +290,16 @@ public class Board {
             int endingSquare = kingSquare + move;
             int endingRow = endingSquare % 8;
             int endingCol = endingSquare / 8;
+
+            if (endingSquare < 0 || endingSquare > 63) {
+                continue;
+            } //if
             byte endingPiece = getSquare(endingSquare);
 
             /*
              * Checks to make sure it doesn't wrap around, is in bounds, and is a opposing knight
              */
             if ((Math.abs(endingRow - row) <= 2) && (Math.abs(endingCol - col) <= 2)
-                    && ((endingSquare >= 0) && (endingSquare <= 63))
                     && (endingPiece == oppKnight)) {
                 return false;
             } // if
