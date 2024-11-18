@@ -16,10 +16,10 @@ public class mainTester {
         /* Initialize all starting positions of a board */
         board1.startingPos();
         board2.startingPos();
-        board2.setSquare(25, PieceTypes.EMPTY);
-        board2.setSquare(27, PieceTypes.WHITE_PAWN);
-        board2.setSquare(30, PieceTypes.EMPTY);
-        board2.setSquare(28, PieceTypes.BLACK_PAWN);
+        board2.setSquare(33, PieceTypes.EMPTY);
+        board2.setSquare(35, PieceTypes.WHITE_PAWN);
+        board2.setSquare(38, PieceTypes.EMPTY);
+        board2.setSquare(36, PieceTypes.BLACK_PAWN);
         board2.setSquare(48, PieceTypes.EMPTY);
         board2.setSquare(42, PieceTypes.WHITE_KNIGHT);
         board2.setSquare(15, PieceTypes.EMPTY);
@@ -27,21 +27,21 @@ public class mainTester {
         board2.setSquare(40, PieceTypes.EMPTY);
         board2.setSquare(19, PieceTypes.WHITE_BISHOP);
 
-        Board[] nextboards1 = board1.nextMoves();
+        // Board[] nextboards1 = board1.nextMoves();
 
-        for (int i = 0; i < nextboards1.length; i++) {
-            nextboards1[i].printBoard(pen);
-            pen.println("");
-        }
+        // for (int i = 0; i < nextboards1.length; i++) {
+        //     nextboards1[i].printBoard(pen);
+        //     pen.println("");
+        // }
 
         Board[] nextboards2 = board2.nextMoves();
 
+        board2.printBoard(pen);
         for (int i = 0; i < nextboards2.length; i++) {
             nextboards2[i].printBoard(pen);
             pen.println("");
         }
-        System.out.println(nextboards1.length);
-        System.out.println(nextboards2.length);;
+
         pen.close();
     }
 }

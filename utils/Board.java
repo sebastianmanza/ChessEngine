@@ -128,40 +128,41 @@ public class Board {
         for (int col = 7; col >= 0; col--) {
             for (int row = 0; row < 8; row++) {
                 int squareIndex = row * 8 + col;
-                String piece;
+                char piece;
                 switch (getSquare(squareIndex)) {
                     case PieceTypes.EMPTY ->
-                        piece = "--";
+                        piece = '-';
                     case PieceTypes.WHITE_PAWN ->
-                        piece = "WP";
+                        piece = '\u2659';
                     case PieceTypes.BLACK_PAWN ->
-                        piece = "BP";
+                        piece = '\u265F';
                     case PieceTypes.WHITE_ROOK ->
-                        piece = "WR";
+                        piece = '\u2656';
                     case PieceTypes.BLACK_ROOK ->
-                        piece = "BR";
+                        piece = '\u265C';
                     case PieceTypes.WHITE_KNIGHT ->
-                        piece = "WN";
+                        piece = '\u2658';
                     case PieceTypes.BLACK_KNIGHT ->
-                        piece = "BN";
+                        piece = '\u265E';
                     case PieceTypes.WHITE_BISHOP ->
-                        piece = "WB";
+                        piece = '\u2657';
                     case PieceTypes.BLACK_BISHOP ->
-                        piece = "BB";
+                        piece = '\u265D';
                     case PieceTypes.WHITE_QUEEN ->
-                        piece = "WQ";
+                        piece = '\u2655';
                     case PieceTypes.BLACK_QUEEN ->
-                        piece = "BQ";
+                        piece = '\u265B';
                     case PieceTypes.WHITE_KING ->
-                        piece = "WK";
+                        piece = '\u2654';
                     case PieceTypes.BLACK_KING ->
-                        piece = "BK";
+                        piece = '\u265A';
                     default ->
                         throw new Exception("Piece not found.");
                 } //switch
-                pen.print("|" + piece);
+                pen.print(piece);
+                pen.print(' ');
             } //for
-            pen.print("|\n");
+            pen.print('\n');
         } //for
     } //printBoard
 
@@ -384,14 +385,14 @@ public class Board {
             } //if
             /* Add legal game states (those where the king is not in check) to the master list of nextPositions */
             for (Board pieceMove : pieceMoves) {
-                if (pieceMove.isLegal()) {
+                // if (pieceMove.isLegal()) {
                     nextPositions[numPossibleMoves] = pieceMove;
                     numPossibleMoves++;
                     if (numPossibleMoves >= nextPositions.length) {
                         /* Expand the array if it's full. */
                         nextPositions = Arrays.copyOf(nextPositions, numPossibleMoves * 2);
                     } //if
-                } //if
+                //} //if
             } //for
         } //for
         /* Return only the legal game states in a correctly sized array */
