@@ -14,22 +14,22 @@ public class PieceMoves {
         Board newBoardFour = originalBoard.copyBoard();
 
 
-        /*Need to check for piece color */
+        /* Need to check for piece color */
         newBoard.setSquare(endingSquare, PieceTypes.WHITE_KNIGHT);
         newBoard.setSquare(startingSquare, PieceTypes.EMPTY);
         promotionMoves[0] = newBoard;
 
         newBoardTwo.setSquare(endingSquare, PieceTypes.WHITE_BISHOP);
         newBoardTwo.setSquare(startingSquare, PieceTypes.EMPTY);
-        promotionMoves[1] = newBoard;
+        promotionMoves[1] = newBoardTwo;
 
         newBoardThree.setSquare(endingSquare, PieceTypes.WHITE_ROOK);
         newBoardThree.setSquare(startingSquare, PieceTypes.EMPTY);
-        promotionMoves[2] = newBoard;
+        promotionMoves[2] = newBoardThree;
 
         newBoardFour.setSquare(endingSquare, PieceTypes.WHITE_QUEEN);
         newBoardFour.setSquare(startingSquare, PieceTypes.EMPTY);
-        promotionMoves[3] = newBoard;
+        promotionMoves[3] = newBoardFour;
 
         return promotionMoves;
     }
@@ -260,7 +260,7 @@ public class PieceMoves {
             int endingRow = endingSquare % 8;
             int endingCol = endingSquare / 8;
 
-            if ((endingSquare < 0) && (endingSquare > 63)) {
+            if ((endingSquare < 0) || (endingSquare > 63)) {
                 continue;
             } //if
             byte piece = currentState.getSquare(endingSquare);

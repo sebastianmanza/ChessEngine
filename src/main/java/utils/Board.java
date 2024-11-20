@@ -1,7 +1,9 @@
 package utils;
 
 import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Random;
 
 public class Board {
 
@@ -29,22 +31,25 @@ public class Board {
      */
     public byte engineColor;
 
+    public boolean hasLegalMoves;
+
     /**
      * Builds a new board representing the games current state.
      *
-     * @param turnCol representing who's turn it currently is
+     * @param turnCol   representing who's turn it currently is
      * @param engineCol representing the color the engine is playing as
      */
     public Board(byte turnCol, byte engineCol) {
         this.turnColor = turnCol;
         this.engineColor = engineCol;
+        this.hasLegalMoves = true;
     }
 
     /**
      * Sets a square on the board to a piece.
      *
      * @param square The square index to be set (0-63 inclusive)
-     * @param piece The piece type (defined in PieceTypes)
+     * @param piece  The piece type (defined in PieceTypes)
      */
     public void setSquare(int square, byte piece) {
         /* Interpret the row and column based off of the square */
@@ -54,7 +59,8 @@ public class Board {
         boolean highNibble = (square % 2 == 0);
 
         /*
-         * Clears the half of the byte that the piece will be stored on, and shifts the piece
+         * Clears the half of the byte that the piece will be stored on, and shifts the
+         * piece
          * appropriately
          */
         if (highNibble) {
@@ -118,6 +124,13 @@ public class Board {
         setSquare(39, PieceTypes.BLACK_KING);
     } // startingPos
 
+    public void updateLegalMoves(Board[] moves) {
+        hasLegalMoves = (moves.length > 0);
+    } //updateLegalMoves
+
+    public void updateLegalMoves(ArrayList<Board> moves) {
+        hasLegalMoves = !moves.isEmpty();
+    }
     /**
      * Prints the board in a basic textual form
      *
@@ -197,8 +210,9 @@ public class Board {
      * @return true if the game is over, else false
      */
     public boolean isGameOver() {
-        return (this.nextMoves().length == 0);
-    } // isGameOver
+            /* Make sure the kings are still there and there are legal moves left */
+            return (kingCapture(PieceTypes.WHITE_KING) || kingCapture(PieceTypes.BLACK_KING) || !hasLegalMoves);
+        } // isGameOver
 
     /**
      * Calculates the number of points won or lost by the engine at the end of a game.
@@ -232,8 +246,19 @@ public class Board {
             } // if
         } // for
         return true;
-    } // kingCapture
+    }// kingCapture
 
+    /**
+     * Gets the opposite color of the current turn
+     * @return A byte representation of the opposite color.
+     */
+    public byte oppColor() {
+        if (this.turnColor == PieceTypes.WHITE) {
+            return PieceTypes.BLACK;
+        } else {
+            return PieceTypes.WHITE;
+        } //if/else
+    } //oppColor()
     /**
      * Checks if the game state is a legal position. If the king is in check, the position is not
      * legal.
@@ -245,7 +270,7 @@ public class Board {
         int[] pawnCaptures = {-7, 7};
         int[] kingMoves = {-9, -8, -7, -1, 1, 7, 8, 9};
 
-        int kingSquare = 0;
+        int kingSquare = -1;
 
         /*
          * Set the piece to the king we're looking for, and the opposing pieces correctly.
@@ -273,6 +298,11 @@ public class Board {
                 break;
             } // if
         } // if
+
+        /* If the king isn't on the board, its not a legal position */
+        if (kingSquare < 0) {
+            return false;
+        } //if
 
         int row = kingSquare % 8;
         int col = kingSquare / 8;
@@ -339,7 +369,7 @@ public class Board {
                 endingPiece = this.getSquare(endingSquare);
 
                 /* Check that the square is either empty or an opposing color. */
-                if (endingSquare != PieceTypes.EMPTY && pieceColor(endingPiece) == this.turnColor) {
+                if (endingPiece != PieceTypes.EMPTY && pieceColor(endingPiece) == this.turnColor) {
                     break;
                 } // if
 
@@ -381,7 +411,7 @@ public class Board {
                 endingPiece = this.getSquare(endingSquare);
 
                 /* Check that the square is either empty or an opposing color. */
-                if (endingSquare != PieceTypes.EMPTY && pieceColor(endingPiece) == this.turnColor) {
+                if (endingPiece != PieceTypes.EMPTY && pieceColor(endingPiece) == this.turnColor) {
                     break;
                 } // if
 
@@ -400,7 +430,7 @@ public class Board {
             int endingRow = endingSquare % 8;
             int endingCol = endingSquare / 8;
 
-            if ((endingSquare < 0) && (endingSquare > 63)) {
+            if ((endingSquare < 0) || (endingSquare > 63)) {
                 continue;
             } // if
             byte endingPiece = this.getSquare(endingSquare);
@@ -421,6 +451,43 @@ public class Board {
         return true;
     } // isLegal()
 
+    /**
+     * Create a random (legal) nextMove
+     * @return a Board of a random move, or null if there are no legal moves.
+     */
+    public Board ranMove() {
+        Board move;
+        ArrayList<Integer> onSquares = new ArrayList<>();
+        Random rand = new Random();
+        for (int square = 0; square < 64; square++) {
+            byte piece = getSquare(square);
+            if (piece != PieceTypes.EMPTY && isColor(piece, this.turnColor)) {
+                onSquares.add(square);
+            } //if
+        } //for
+
+        while(!onSquares.isEmpty()) {
+        int selection = rand.nextInt(onSquares.size());
+        int square = onSquares.get(selection);
+        byte piece = getSquare(square);
+        Board[] pieceMoves = generatePieceMoves(piece, square);
+        ArrayList<Board> legalMoves = new ArrayList<>();
+        for (Board pieceMove : pieceMoves) {
+            if (pieceMove.isLegal()) {
+                legalMoves.add(pieceMove);
+            } //if
+        } //for
+
+        if (legalMoves.isEmpty()) {
+            onSquares.remove(selection);
+        } else {
+            move = legalMoves.get(rand.nextInt(legalMoves.size()));
+            return move;
+        }
+        updateLegalMoves(legalMoves);
+        }
+        return null;
+    }
     /**
      * Creates an array of all possible next moves from this position.
      *
@@ -454,6 +521,7 @@ public class Board {
              */
             for (Board pieceMove : pieceMoves) {
                 if (pieceMove.isLegal()) {
+                    pieceMove.turnColor = this.oppColor();
                     nextPositions[numPossibleMoves] = pieceMove;
                     numPossibleMoves++;
                     if (numPossibleMoves >= nextPositions.length) {
@@ -463,6 +531,8 @@ public class Board {
                 } // if
             } // for
         } // for
+
+        updateLegalMoves(nextPositions);
         /* Return only the legal game states in a correctly sized array */
         return Arrays.copyOf(nextPositions, numPossibleMoves);
     } // nextMoves
@@ -503,9 +573,9 @@ public class Board {
 
     public Board copyBoard() {
         Board returnState = new Board(this.turnColor, this.engineColor);
-        for (int i = 0; i < 8; i++) {
-            System.arraycopy(this.board[i], 0, returnState.board[i], 0, 4); // for
-        } // for
+        for (int i = 0; i < this.board.length; i++) {
+            System.arraycopy(this.board[i], 0, returnState.board[i], 0, this.board[0].length);
+        } //for
         return returnState;
     } // copyBoard()
 

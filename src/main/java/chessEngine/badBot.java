@@ -1,16 +1,17 @@
 package chessEngine;
+
 import java.io.PrintWriter;
-import java.util.Random;
+import java.time.Duration;
 import java.util.Scanner;
 
 import utils.Board;
+import utils.MCTUtils.MCT;
 import utils.PieceMoves;
 import utils.PieceTypes;
 import utils.UIutils;
 
-public class randoBot {
-    public static void main(String[] args) throws Exception{
-        Random rand = new Random();
+public class badBot {
+      public static void main(String[] args) throws Exception{
         Scanner eyes = new Scanner(System.in);
         PrintWriter pen = new PrintWriter(System.out, true);
         String input = "";
@@ -21,13 +22,15 @@ public class randoBot {
         
         int start;
         int end;
+        Duration duration = Duration.ofSeconds(30);
 
         playingBoard.printBoard(pen);
         pen.println("");
         while (!input.equals("QUIT")){
             pen.println("----------------");
-            Board[] nextMoves = playingBoard.nextMoves();
-            playingBoard = nextMoves[rand.nextInt(nextMoves.length)];
+            MCT searchTree = new MCT(playingBoard);
+            playingBoard = searchTree.search(duration);
+
             playingBoard.printBoard(pen);
             pen.println("Starting square:");
             input = eyes.nextLine();
@@ -35,12 +38,17 @@ public class randoBot {
             pen.println("\nEnding Square:");
             input = eyes.nextLine();
             end = UIutils.tosquareIndex(input);
+
+            pen.println("Duration to run:");
+            input = eyes.nextLine();
+            duration = Duration.ofSeconds(Integer.parseInt(input));
+
+
             pen.print("\n----------------\n");
             playingBoard = PieceMoves.movePiece(start, end, playingBoard);
             playingBoard.printBoard(pen);
             playingBoard.turnColor = playingBoard.oppColor();
         } 
         eyes.close();
-
-    }
+}
 }

@@ -2,6 +2,7 @@ package utils.MCTUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+
 import utils.Board;
 
 public class MCNode {
@@ -35,7 +36,7 @@ public class MCNode {
     public MCNode (Board curState, MCNode parentNode) {
         this.currentState = curState;
         this.wins = 0.0;
-        this.playOuts = 1;
+        this.playOuts = 0;
         this.lastMove = parentNode;
         this.nextMoves = new ArrayList<>();
     } //MCNode(Board, MCNode)
