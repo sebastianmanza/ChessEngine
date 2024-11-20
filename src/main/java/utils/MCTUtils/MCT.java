@@ -138,6 +138,13 @@ public class MCT {
                 break;
             } //if
             gameState = nextGameState;
+            if (gameState.turnColor == gameState.engineColor) {
+                if (gameState.material() < -10) {
+                    return 0.0;
+                } else if (gameState.material() > 10) {
+                    return 1.0;
+                }
+            }
             if (depth++ >= 200) {
                 return 0.5;
             } //if

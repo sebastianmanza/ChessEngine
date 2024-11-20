@@ -126,11 +126,12 @@ public class Board {
 
     public void updateLegalMoves(Board[] moves) {
         hasLegalMoves = (moves.length > 0);
-    } //updateLegalMoves
+    } // updateLegalMoves
 
     public void updateLegalMoves(ArrayList<Board> moves) {
         hasLegalMoves = !moves.isEmpty();
     }
+
     /**
      * Prints the board in a basic textual form
      *
@@ -196,7 +197,7 @@ public class Board {
     /**
      * Checks if the color of the piece is the same as the color of the turn.
      *
-     * @param piece The byte representing the piece
+     * @param piece     The byte representing the piece
      * @param turnColor The byte representing the turn color
      * @return true if it is the same, otherwise false.
      */
@@ -210,14 +211,46 @@ public class Board {
      * @return true if the game is over, else false
      */
     public boolean isGameOver() {
-            /* Make sure the kings are still there and there are legal moves left */
-            return (kingCapture(PieceTypes.WHITE_KING) || kingCapture(PieceTypes.BLACK_KING) || !hasLegalMoves);
-        } // isGameOver
+        /* Make sure the kings are still there and there are legal moves left */
+        return (kingCapture(PieceTypes.WHITE_KING) || kingCapture(PieceTypes.BLACK_KING) || !hasLegalMoves);
+    } // isGameOver
+
+    public int material() {
+        int material = 0;
+        for (int i = 0; i < 64; i++) {
+            byte piece = getSquare(i);
+            /* If the square is empty ignore it. */
+            if (piece == PieceTypes.EMPTY) {
+                continue;
+            }
+            switch (piece) {
+                case PieceTypes.WHITE_PAWN -> material += 1;
+                case PieceTypes.BLACK_PAWN -> material -= 1;
+                case PieceTypes.WHITE_KNIGHT -> material += 3;
+                case PieceTypes.BLACK_KNIGHT -> material -= 3;
+                case PieceTypes.WHITE_BISHOP -> material += 3;
+                case PieceTypes.BLACK_BISHOP -> material -= 3;
+                case PieceTypes.WHITE_ROOK -> material += 5;
+                case PieceTypes.BLACK_ROOK -> material -= 5;
+                case PieceTypes.WHITE_QUEEN -> material += 8;
+                case PieceTypes.BLACK_QUEEN -> material -= 8;
+                case PieceTypes.WHITE_KING -> material += 1000;
+                case PieceTypes.BLACK_KING -> material -= 1000;
+                default -> throw new AssertionError();
+            }
+            if (this.turnColor == PieceTypes.WHITE) {
+                material = 0 - material;
+            } // if
+        }
+        return material;
+    }
 
     /**
-     * Calculates the number of points won or lost by the engine at the end of a game.
+     * Calculates the number of points won or lost by the engine at the end of a
+     * game.
      *
-     * @return 1.0 if the game was won, 0.0 if the game was lost, or 0.5 in the event of a stalemate
+     * @return 1.0 if the game was won, 0.0 if the game was lost, or 0.5 in the
+     *         event of a stalemate
      *         or draw
      */
     public double vicPoints() {
@@ -250,6 +283,7 @@ public class Board {
 
     /**
      * Gets the opposite color of the current turn
+     * 
      * @return A byte representation of the opposite color.
      */
     public byte oppColor() {
@@ -257,23 +291,26 @@ public class Board {
             return PieceTypes.BLACK;
         } else {
             return PieceTypes.WHITE;
-        } //if/else
-    } //oppColor()
+        } // if/else
+    } // oppColor()
+
     /**
-     * Checks if the game state is a legal position. If the king is in check, the position is not
+     * Checks if the game state is a legal position. If the king is in check, the
+     * position is not
      * legal.
      */
     public boolean isLegal() {
-        int[] straightMoves = {-8, -1, 1, 8};
-        int[] diagMoves = {-9, -7, 7, 9};
-        int[] LMoves = {-17, -15, -10, -6, 6, 10, 15, 17};
-        int[] pawnCaptures = {-7, 7};
-        int[] kingMoves = {-9, -8, -7, -1, 1, 7, 8, 9};
+        int[] straightMoves = { -8, -1, 1, 8 };
+        int[] diagMoves = { -9, -7, 7, 9 };
+        int[] LMoves = { -17, -15, -10, -6, 6, 10, 15, 17 };
+        int[] pawnCaptures = { -7, 7 };
+        int[] kingMoves = { -9, -8, -7, -1, 1, 7, 8, 9 };
 
         int kingSquare = -1;
 
         /*
-         * Set the piece to the king we're looking for, and the opposing pieces correctly.
+         * Set the piece to the king we're looking for, and the opposing pieces
+         * correctly.
          */
         byte piece = PieceTypes.BLACK_KING;
         byte oppPawn = PieceTypes.WHITE_PAWN;
@@ -302,7 +339,7 @@ public class Board {
         /* If the king isn't on the board, its not a legal position */
         if (kingSquare < 0) {
             return false;
-        } //if
+        } // if
 
         int row = kingSquare % 8;
         int col = kingSquare / 8;
@@ -323,11 +360,12 @@ public class Board {
 
             if (endingSquare < 0 || endingSquare > 63) {
                 continue;
-            } //if
+            } // if
             byte endingPiece = getSquare(endingSquare);
 
             /*
-             * Checks to make sure it doesn't wrap around, is in bounds, and is a opposing knight
+             * Checks to make sure it doesn't wrap around, is in bounds, and is a opposing
+             * knight
              */
             if ((Math.abs(endingRow - row) <= 2) && (Math.abs(endingCol - col) <= 2)
                     && (endingPiece == oppKnight)) {
@@ -336,7 +374,8 @@ public class Board {
         } // for
 
         /*
-         * Check if the king is in check from any rooks or queens. This occurs if the first piece it
+         * Check if the king is in check from any rooks or queens. This occurs if the
+         * first piece it
          * sees in any straight direction is an opposite rook or queen.
          */
         for (int move : straightMoves) {
@@ -346,7 +385,8 @@ public class Board {
             byte endingPiece;
 
             /*
-             * Checks that it doesn't wrap around, is in legal bounds, and is an opposing R or Q
+             * Checks that it doesn't wrap around, is in legal bounds, and is an opposing R
+             * or Q
              */
             /* Continue moving the piece in the direction hile it can */
             while (true) {
@@ -382,7 +422,10 @@ public class Board {
                 } // if
             } // while(true)
         }
-        /* Check if the king is in check from any bishops or queens. See above, but diagonal */
+        /*
+         * Check if the king is in check from any bishops or queens. See above, but
+         * diagonal
+         */
         for (int move : diagMoves) {
             int endingSquare = kingSquare;
             int endingRow;
@@ -396,7 +439,8 @@ public class Board {
                 endingCol = endingSquare / 8;
 
                 /*
-                 * The difference between the starting column and ending column and starting row and
+                 * The difference between the starting column and ending column and starting row
+                 * and
                  * ending row must be equal for it to be a valid move
                  */
                 if (Math.abs(endingCol - col) != Math.abs(endingRow - row)) {
@@ -436,8 +480,10 @@ public class Board {
             byte endingPiece = this.getSquare(endingSquare);
 
             /*
-             * The move is valid if it is in bounds, and either to an empty square or to a square
-             * with an opponent piece. It also must be within 1 row and 1 column, or it has wrapped
+             * The move is valid if it is in bounds, and either to an empty square or to a
+             * square
+             * with an opponent piece. It also must be within 1 row and 1 column, or it has
+             * wrapped
              * around.
              */
             if ((Math.abs(endingRow - row) <= 1) && (Math.abs(endingCol - col) <= 1)
@@ -453,6 +499,7 @@ public class Board {
 
     /**
      * Create a random (legal) nextMove
+     * 
      * @return a Board of a random move, or null if there are no legal moves.
      */
     public Board ranMove() {
@@ -463,31 +510,32 @@ public class Board {
             byte piece = getSquare(square);
             if (piece != PieceTypes.EMPTY && isColor(piece, this.turnColor)) {
                 onSquares.add(square);
-            } //if
-        } //for
+            } // if
+        } // for
 
-        while(!onSquares.isEmpty()) {
-        int selection = rand.nextInt(onSquares.size());
-        int square = onSquares.get(selection);
-        byte piece = getSquare(square);
-        Board[] pieceMoves = generatePieceMoves(piece, square);
-        ArrayList<Board> legalMoves = new ArrayList<>();
-        for (Board pieceMove : pieceMoves) {
-            if (pieceMove.isLegal()) {
-                legalMoves.add(pieceMove);
-            } //if
-        } //for
+        while (!onSquares.isEmpty()) {
+            int selection = rand.nextInt(onSquares.size());
+            int square = onSquares.get(selection);
+            byte piece = getSquare(square);
+            Board[] pieceMoves = generatePieceMoves(piece, square);
+            ArrayList<Board> legalMoves = new ArrayList<>();
+            for (Board pieceMove : pieceMoves) {
+                if (pieceMove.isLegal()) {
+                    legalMoves.add(pieceMove);
+                } // if
+            } // for
 
-        if (legalMoves.isEmpty()) {
-            onSquares.remove(selection);
-        } else {
-            move = legalMoves.get(rand.nextInt(legalMoves.size()));
-            return move;
-        }
-        updateLegalMoves(legalMoves);
+            if (legalMoves.isEmpty()) {
+                onSquares.remove(selection);
+            } else {
+                move = legalMoves.get(rand.nextInt(legalMoves.size()));
+                return move;
+            }
+            updateLegalMoves(legalMoves);
         }
         return null;
     }
+
     /**
      * Creates an array of all possible next moves from this position.
      *
@@ -495,7 +543,8 @@ public class Board {
      */
     public Board[] nextMoves() {
         /*
-         * Create an array to store all possible next moves, and an integer to store the current
+         * Create an array to store all possible next moves, and an integer to store the
+         * current
          * number of moves in the array.
          */
         Board[] nextPositions = new Board[50];
@@ -504,7 +553,8 @@ public class Board {
         for (int square = 0; square < 64; square++) {
             byte piece = getSquare(square);
             /*
-             * If the square is empty, or its an opponents piece, don't bother looking at the moves.
+             * If the square is empty, or its an opponents piece, don't bother looking at
+             * the moves.
              */
             if (piece == PieceTypes.EMPTY || !isColor(piece, this.turnColor)) {
                 continue;
@@ -516,7 +566,8 @@ public class Board {
                 continue;
             } // if
             /*
-             * Add legal game states (those where the king is not in check) to the master list of
+             * Add legal game states (those where the king is not in check) to the master
+             * list of
              * nextPositions
              */
             for (Board pieceMove : pieceMoves) {
@@ -550,22 +601,22 @@ public class Board {
         byte color = pieceColor(piece);
 
         /*
-         * Check the type of the piece and generate the appropriate moves. Note that for slideMoves,
-         * the specific color given as pieceType is irrelevant, since that bit will not be looked at
+         * Check the type of the piece and generate the appropriate moves. Note that for
+         * slideMoves,
+         * the specific color given as pieceType is irrelevant, since that bit will not
+         * be looked at
          */
         switch (piece) {
-            case PieceTypes.WHITE_PAWN, PieceTypes.BLACK_PAWN -> pieceMoves =
-                    PieceMoves.pawnMoves(square, color, this);
-            case PieceTypes.WHITE_KNIGHT, PieceTypes.BLACK_KNIGHT -> pieceMoves =
-                    PieceMoves.knightMoves(square, color, this);
-            case PieceTypes.WHITE_BISHOP, PieceTypes.BLACK_BISHOP -> pieceMoves =
-                    PieceMoves.slideMoves(square, color, PieceTypes.WHITE_BISHOP, this);
-            case PieceTypes.WHITE_ROOK, PieceTypes.BLACK_ROOK -> pieceMoves =
-                    PieceMoves.slideMoves(square, color, PieceTypes.WHITE_ROOK, this);
-            case PieceTypes.WHITE_QUEEN, PieceTypes.BLACK_QUEEN -> pieceMoves =
-                    PieceMoves.slideMoves(square, color, PieceTypes.WHITE_QUEEN, this);
-            case PieceTypes.WHITE_KING, PieceTypes.BLACK_KING -> pieceMoves =
-                    PieceMoves.kingMoves(square, color, this);
+            case PieceTypes.WHITE_PAWN, PieceTypes.BLACK_PAWN -> pieceMoves = PieceMoves.pawnMoves(square, color, this);
+            case PieceTypes.WHITE_KNIGHT, PieceTypes.BLACK_KNIGHT ->
+                pieceMoves = PieceMoves.knightMoves(square, color, this);
+            case PieceTypes.WHITE_BISHOP, PieceTypes.BLACK_BISHOP ->
+                pieceMoves = PieceMoves.slideMoves(square, color, PieceTypes.WHITE_BISHOP, this);
+            case PieceTypes.WHITE_ROOK, PieceTypes.BLACK_ROOK ->
+                pieceMoves = PieceMoves.slideMoves(square, color, PieceTypes.WHITE_ROOK, this);
+            case PieceTypes.WHITE_QUEEN, PieceTypes.BLACK_QUEEN ->
+                pieceMoves = PieceMoves.slideMoves(square, color, PieceTypes.WHITE_QUEEN, this);
+            case PieceTypes.WHITE_KING, PieceTypes.BLACK_KING -> pieceMoves = PieceMoves.kingMoves(square, color, this);
             default -> throw new AssertionError();
         } // switch
         return pieceMoves;
@@ -575,7 +626,7 @@ public class Board {
         Board returnState = new Board(this.turnColor, this.engineColor);
         for (int i = 0; i < this.board.length; i++) {
             System.arraycopy(this.board[i], 0, returnState.board[i], 0, this.board[0].length);
-        } //for
+        } // for
         return returnState;
     } // copyBoard()
 
