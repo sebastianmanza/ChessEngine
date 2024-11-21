@@ -35,7 +35,7 @@ public class MCT {
      */
     public MCT(Board currentMove) {
         this.root = new MCNode(currentMove, null);
-        this.root.playOuts = 1;
+        this.root.playOuts = 1000;
     }
 
     /**
@@ -131,8 +131,8 @@ public class MCT {
 
         /* Make sure the last moves playouts arent null, if they are, set it to one. */
         double lastMovePlayouts = node.lastMove != null ? node.lastMove.playOuts : 1;
-        double result = node.wins / node.playOuts
-                + (EXPLORATION_PARAM * Math.sqrt((Math.log(lastMovePlayouts)) / node.playOuts));
+        double result = (node.wins / node.playOuts
+                + (EXPLORATION_PARAM * Math.sqrt((Math.log(lastMovePlayouts)) / node.playOuts)));
         return result;
     } // UCT(node)
 

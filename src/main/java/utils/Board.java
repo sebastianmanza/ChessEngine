@@ -620,6 +620,7 @@ public class Board {
         for (Board move : nextMoves) {
             totalWeight+=move.moveWeight;
             if (totalWeight > random) {
+                move.turnColor = this.oppColor();
                 return move;
             } //if
         } //for
