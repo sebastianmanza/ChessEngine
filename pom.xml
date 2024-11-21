@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <!-- The model version -->
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- Project coordinates -->
+    <groupId>SebastianManza</groupId>
+    <artifactId>chessEngine</artifactId>  <!-- Change this to your project artifact ID -->
+    <version>1.0-SNAPSHOT</version>  <!-- Version of your project -->
+    <packaging>jar</packaging>
+
+    <!-- Name and description of the project -->
+    <name>Chess Engine</name>
+    <description>Chess engine using Monte Carlo Tree Search</description>
+
+    <!-- Properties for compiling Java -->
+    <properties>
+        <maven.compiler.source>17</maven.compiler.source>  <!-- Set to the Java version you're using -->
+        <maven.compiler.target>17</maven.compiler.target>  <!-- Set to the Java version you're using -->
+    </properties>
+
+    <!-- Dependencies for your project -->
+    <dependencies>
+        <!-- Example of adding JUnit for testing -->
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.13.2</version>
+            <scope>test</scope>
+        </dependency>
+        
+        <!-- Add other dependencies as needed -->
+    </dependencies>
+
+    <!-- Build plugins -->
+    <build>
+        <plugins>
+            <!-- Exec Maven Plugin -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <!-- Set the main class of your program -->
+                    <mainClass>chessEngine.badBot</mainClass>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.1.0</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>chessEngine.badBot</mainClass>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

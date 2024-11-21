@@ -14,7 +14,7 @@ public class badBot {
       public static void main(String[] args) throws Exception{
         Scanner eyes = new Scanner(System.in);
         PrintWriter pen = new PrintWriter(System.out, true);
-        String input = "";
+        String input;
 
         Board playingBoard = new Board(PieceTypes.WHITE, PieceTypes.WHITE);
         playingBoard.startingPos();

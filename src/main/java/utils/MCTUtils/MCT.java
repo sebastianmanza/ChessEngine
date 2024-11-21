@@ -21,9 +21,9 @@ import utils.Board;
  */
 public class MCT {
     /** The exploration parameter, used to balance exploration vs exploitation */
-    public static final double EXPLORATION_PARAM = Math.sqrt(2);
+    public static final double EXPLORATION_PARAM = 1;
 
-    /** The root node of the move. (i.e. the move we are exploring from)*/
+    /** The root node of the move. (i.e. the move we are exploring from) */
     MCNode root;
 
     static Random rand = new Random();
@@ -43,43 +43,77 @@ public class MCT {
      * @param duration The amount of time to run the search for
      * @return The best possible move
      */
+    // public Board search(Duration duration) throws Exception {
+    // Instant start = Instant.now();
+    // Instant deadline = start.plus(duration);
+    // AtomicInteger iterations = new AtomicInteger(0);
+    // MCNode bestNode;
+    // PrintWriter pen = new PrintWriter(System.out, true);
+    // ExecutorService executor = Executors.newFixedThreadPool(10);
+
+    // for (int i = 0; i < 10; i++) {
+    // executor.submit(() -> {
+    // /* Runs for a set duration of time */
+    // while (Instant.now().isBefore(deadline)) {
+    // MCNode selectedNode = select(root);
+    // MCNode expandedNode = expand(selectedNode);
+
+    // double winPoints = simulate(expandedNode);
+    // backPropagate(expandedNode, winPoints, root);
+    // iterations.incrementAndGet();
+    // } // while
+    // });
+    // }
+    // executor.shutdown();
+    // executor.awaitTermination(duration.toMillis(), TimeUnit.MILLISECONDS);
+    // /* Find the best move based on the node that was played the most */
+    // bestNode = Collections.max(root.nextMoves,
+    // Comparator.comparingInt(n -> n.playOuts));
+
+    // pen.println("Simulated " + iterations + " games.");
+    // pen.printf("Chosen move was played %d times with a simulated win rate of
+    // %.2f%%\n",
+    // bestNode.playOuts, (bestNode.wins / bestNode.playOuts) * 100);
+
+    // return bestNode.currentState;
+    // } // search(Duration)
     public Board search(Duration duration) throws Exception {
         Instant start = Instant.now();
+        Instant deadline = start.plus(duration);
         int iterations = 0;
-        MCNode bestNode = root;
         PrintWriter pen = new PrintWriter(System.out, true);
         ForkJoinPool pool = new ForkJoinPool();
 
         /* Runs for a set duration of time */
-        while (Duration.between(start, Instant.now()).compareTo(duration) < 0) {
+        while (Instant.now().isBefore(deadline)) {
             MCNode selectedNode = select(root);
             MCNode expandedNode = expand(selectedNode);
 
-            /* Runs paralell simulations for the expanded node (10 games at a time) */
+            /* Runs parallel simulations for the expanded node (10 games at a time) */
             List<Callable<Double>> tasks = new ArrayList<>();
             for (int i = 0; i < 10; i++) {
                 tasks.add(() -> simulate(expandedNode));
                 iterations++;
-            } //for
+            } // for
 
             List<Future<Double>> results = pool.invokeAll(tasks);
             for (Future<Double> result : results) {
                 double winPoints = result.get();
                 backPropagate(expandedNode, winPoints, root);
-            } //for
-
-            /* Find the best move based on the node that was played the most*/
-            Collections.shuffle(root.nextMoves);
-            bestNode = Collections.max(root.nextMoves,
-                    Comparator.comparingInt(n -> n.playOuts));
-        } //while
+            } // for
+        } // while
+        /* Find the best move based on the node that was played the most */
+        MCNode bestNode = Collections.max(root.nextMoves,
+                Comparator.comparingInt(n -> n.playOuts));
         pool.shutdown();
+        MCNode selectNode = select(root);
+        selectNode.currentState.printBoard(pen);
         pen.println("Simulated " + iterations + " games.");
         pen.printf("Chosen move was played %d times with a simulated win rate of %.2f%%\n",
                 bestNode.playOuts, (bestNode.wins / bestNode.playOuts) * 100);
 
         return bestNode.currentState;
-    } //search(Duration)
+    } // search(Duration)
 
     /**
      * Calculates a value for a node to select
@@ -92,7 +126,7 @@ public class MCT {
         /* If it's never been played, we should explore it */
         if (node.playOuts == 0) {
             return Double.MAX_VALUE;
-        } //if
+        } // if
 
         /* Make sure the last moves playouts arent null, if they are, set it to one. */
         double lastMovePlayouts = node.lastMove != null ? node.lastMove.playOuts : 1;
@@ -113,7 +147,10 @@ public class MCT {
                 return node;
             } // if
 
-            /* Shuffle it so if none have been tried it selects something random, then return the node with the highest UCT */
+            /*
+             * Shuffle it so if none have been tried it selects something random, then
+             * return the node with the highest UCT
+             */
             Collections.shuffle(node.nextMoves);
             node = Collections.max(node.nextMoves, Comparator.comparingDouble(MCT::UCT));
         } // while
@@ -149,8 +186,8 @@ public class MCT {
             totalWeight += curNode.currentState.moveWeight;
             if (totalWeight > random) {
                 return curNode;
-            } //if
-        } //for
+            } // if
+        } // for
         return node.nextMoves.get(rand.nextInt(node.nextMoves.size()));
     } // expand(node)
 
@@ -164,7 +201,7 @@ public class MCT {
      * @return the number of win-points
      */
 
-    public static double simulate(MCNode node) throws Exception {
+    public static double simulate(MCNode node) {
         Board gameState = node.currentState;
         int depth = 0;
 
@@ -178,14 +215,17 @@ public class MCT {
             gameState = nextGameState;
             int material = gameState.material();
 
-            /* If it's searched a little bit of depth and the material advantage is clear, give a win or a loss. */
+            /*
+             * If it's searched a little bit of depth and the material advantage is clear,
+             * give a win or a loss.
+             */
             if (depth >= 20) {
                 if (gameState.turnColor != gameState.engineColor && material < -9) {
                     return 0.0;
                 } else if (gameState.turnColor == gameState.engineColor && material > 12) {
                     return 1.0;
-                } //if/else
-            } //if
+                } // if/else
+            } // if
 
             /* If it's searched far in, assume a weighted draw. */
             if (depth++ >= 200) {
@@ -193,7 +233,8 @@ public class MCT {
                     return 0.7;
                 } else if (material < -3) {
                     return 0.3;
-                } else return 0.5;
+                } else
+                    return 0.5;
             } // if
         } // while
         return gameState.vicPoints();
@@ -205,7 +246,7 @@ public class MCT {
      * 
      * @param node      The node to backpropagate from (terminating node)
      * @param winPoints The number of points to be given.
-     * @param root The root of the MCT
+     * @param root      The root of the MCT
      */
     public static void backPropagate(MCNode node, double winPoints, MCNode root) {
         MCNode curNode = node;
