@@ -79,7 +79,7 @@ public class PieceMoves {
             if (reachPromotionSquare) {
                 for (int i = 0; i < 4; i++) {
                     pawnMoves[numMoves] = promotePiece(square, forward, currentState)[i];
-                    pawnMoves[numMoves].moveWeight +=5;
+                    pawnMoves[numMoves].moveWeight += 5;
                     numMoves++;
                 } //for
             } else {
@@ -109,10 +109,13 @@ public class PieceMoves {
                 if (reachPromotionSquare) {
                     for (int i = 0; i < 4; i++) {
                         pawnMoves[numMoves] = promotePiece(square, capture, currentState)[i];
+                        pawnMoves[numMoves].moveWeight += 5;
+                        Board.addPieceValue(piece, pawnMoves[numMoves].moveWeight);
                         numMoves++;
                     } //for
                 } else {
                     pawnMoves[numMoves] = movePiece(square, capture, currentState);
+                    Board.addPieceValue(piece, pawnMoves[numMoves].moveWeight);
                     numMoves++;
                 } //if/else
             } //if
@@ -145,6 +148,11 @@ public class PieceMoves {
                     && (Math.abs(endingCol - col) <= 2)
                     && ((endingPiece == PieceTypes.EMPTY) || (Board.pieceColor(endingPiece) != color))) {
                 knightMoves[numMoves] = movePiece(square, endingSquare, currentState);
+
+                /* If it is a capture, weight its move a little. */
+                if (Board.pieceColor(endingPiece) != color) {
+                    Board.addPieceValue(endingPiece, knightMoves[numMoves].moveWeight);
+                }
                 numMoves++;
             } //if
         } //for
@@ -200,6 +208,7 @@ public class PieceMoves {
 
                     /* If it was an opponents piece, it can't go any further */
                     if ((Board.pieceColor(pieceOnSquare) != color) && (pieceOnSquare != PieceTypes.EMPTY)) {
+                        Board.addPieceValue(pieceOnSquare, slideMoves.get(slideMoves.size() - 1).moveWeight);
                         break;
                     } //if
                 } //while(true)
@@ -240,6 +249,7 @@ public class PieceMoves {
 
                     /* If it was an opponents piece, it can't go any further */
                     if ((pieceOnSquare != PieceTypes.EMPTY) && Board.pieceColor(pieceOnSquare) != color) {
+                        Board.addPieceValue(pieceOnSquare, slideMoves.get(slideMoves.size() - 1).moveWeight);
                         break;
                     } //if
                 } //while(true)
@@ -272,6 +282,10 @@ public class PieceMoves {
                     && (Math.abs(endingCol - col) <= 1)
                     && ((piece == PieceTypes.EMPTY) || (Board.pieceColor(piece) != color))) {
                 kingMoves[numMoves] = movePiece(square, endingSquare, currentState);
+
+                if (Board.pieceColor(piece) != color) {
+                    Board.addPieceValue(piece, kingMoves[numMoves].moveWeight);
+                }
                 numMoves++;
             } //if
         } //for

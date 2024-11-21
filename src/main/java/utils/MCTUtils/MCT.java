@@ -1,5 +1,6 @@
 package utils.MCTUtils;
 
+import java.io.PrintWriter;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
@@ -100,9 +101,11 @@ public class MCT {
      */
     public static MCNode expand(MCNode node) {
         Random randomChild = new Random();
+        int totalWeight = 0;
         /* Add all possible children to the node */
         Board[] gameStates = node.currentState.nextMoves();
         for (Board gameState : gameStates) {
+            totalWeight += gameState.moveWeight;
             MCNode newNode = new MCNode(gameState, node);
             node.newChild(newNode);
         } // for
@@ -110,6 +113,14 @@ public class MCT {
         if (node.nextMoves.isEmpty()) {
             return node;
         } // if
+        int random = randomChild.nextInt(totalWeight);
+        totalWeight = 0;
+        for (MCNode curNode : node.nextMoves) {
+            totalWeight += curNode.currentState.moveWeight;
+            if (totalWeight > random) {
+                return curNode;
+            }
+        }
         return node.nextMoves.get(randomChild.nextInt(node.nextMoves.size()));
     } // expand(node)
 
@@ -124,17 +135,22 @@ public class MCT {
      */
 
     public static double simulate(MCNode node) throws Exception {
+        PrintWriter pen = new PrintWriter(System.out, true);
         Board gameState = node.currentState;
         int depth = 0;
 
         /* Run the loop while the game is undecided */
         while (!gameState.isGameOver()) {
-            Board nextGameState = gameState.ranMove();
+            Board nextGameState = gameState.ranWeightedMove();
             if (nextGameState == null) {
                 break;
             } // if
+            
             gameState = nextGameState;
             int material = gameState.material();
+            gameState.printBoard(pen);
+            pen.println(material);
+            
             if (gameState.turnColor != gameState.engineColor && material < -9) {
                 return 0.0;
             } else if (gameState.turnColor == gameState.engineColor && material > 9) {

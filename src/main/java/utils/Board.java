@@ -220,15 +220,15 @@ public class Board {
     public static int addPieceValue(byte piece, int addTo) {
         switch (piece) {
             case PieceTypes.WHITE_PAWN -> addTo += 1;
-            case PieceTypes.BLACK_PAWN -> addTo -= 1;
+            case PieceTypes.BLACK_PAWN -> addTo += 1;
             case PieceTypes.WHITE_KNIGHT -> addTo += 3;
-            case PieceTypes.BLACK_KNIGHT -> addTo -= 3;
+            case PieceTypes.BLACK_KNIGHT -> addTo += 3;
             case PieceTypes.WHITE_BISHOP -> addTo += 3;
-            case PieceTypes.BLACK_BISHOP -> addTo -= 3;
+            case PieceTypes.BLACK_BISHOP -> addTo += 3;
             case PieceTypes.WHITE_ROOK -> addTo += 5;
-            case PieceTypes.BLACK_ROOK -> addTo -= 5;
+            case PieceTypes.BLACK_ROOK -> addTo += 5;
             case PieceTypes.WHITE_QUEEN -> addTo += 9;
-            case PieceTypes.BLACK_QUEEN -> addTo -= 9;
+            case PieceTypes.BLACK_QUEEN -> addTo += 9;
             default -> {
             }
         }
@@ -243,7 +243,23 @@ public class Board {
             if (piece == PieceTypes.EMPTY) {
                 continue;
             }
-            addPieceValue(piece, material);
+            switch (piece) {
+                case PieceTypes.WHITE_PAWN -> material += 1;
+                case PieceTypes.BLACK_PAWN -> material -= 1;
+                case PieceTypes.WHITE_KNIGHT -> material += 3;
+                case PieceTypes.BLACK_KNIGHT -> material -= 3;
+                case PieceTypes.WHITE_BISHOP -> material += 3;
+                case PieceTypes.BLACK_BISHOP -> material -= 3;
+                case PieceTypes.WHITE_ROOK -> material += 5;
+                case PieceTypes.BLACK_ROOK -> material -= 5;
+                case PieceTypes.WHITE_QUEEN -> material += 9;
+                case PieceTypes.BLACK_QUEEN -> material -= 9;
+                default -> {
+                }
+            }
+            if (this.engineColor == PieceTypes.BLACK) {
+                material = 0 - material;
+            }
         }
         return material;
     }
@@ -539,6 +555,32 @@ public class Board {
         }
         return null;
     }
+
+    public Board ranWeightedMove() {
+        Random rand = new Random();
+        Board[] nextMoves = this.nextMoves();
+        int totalWeight = 0;
+
+        if (nextMoves.length == 0) {
+            return null;
+        }
+
+        for (Board move : nextMoves) {
+            totalWeight+= move.moveWeight;
+        }
+
+        int random = rand.nextInt(totalWeight);
+
+        int curWeightVal = 0;
+        for (Board move : nextMoves) {
+            curWeightVal+=move.moveWeight;
+            if (curWeightVal > random) {
+                move.turnColor = oppColor();
+                return move;
+            } //if
+        } //for
+        return null;
+    } 
 
     /**
      * Creates an array of all possible next moves from this position.
