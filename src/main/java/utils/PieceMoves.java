@@ -6,6 +6,13 @@ import java.util.List;
 
 public class PieceMoves {
 
+    /**
+     * Promote a pawn.
+     * @param startingSquare The square the pawn starts on
+     * @param endingSquare The promotion square
+     * @param originalBoard The original baord we are given.
+     * @return A list of boards with the pawn promoted.
+     */
     public static Board[] promotePiece(int startingSquare, int endingSquare, Board originalBoard) {
         Board[] promotionMoves = new Board[4];
         Board newBoard = originalBoard.copyBoard();
@@ -15,6 +22,8 @@ public class PieceMoves {
 
 
         /* Need to check for piece color */
+
+
         newBoard.setSquare(endingSquare, PieceTypes.WHITE_KNIGHT);
         newBoard.setSquare(startingSquare, PieceTypes.EMPTY);
         promotionMoves[0] = newBoard;
@@ -32,8 +41,26 @@ public class PieceMoves {
         promotionMoves[3] = newBoardFour;
 
         return promotionMoves;
-    }
+    } //promotePiece(int, int, Board)
 
+    /**
+     * Weight the move properly.
+     * @param capturedPiece The piece being captured.
+     * @param boardState The current board
+     * @param pieceTypeWeight The amount extra weight being given (pawns have higher, and bishops and knights)
+     */
+    public static void addMoveWeight(byte capturedPiece, Board boardState, int pieceTypeWeight) {
+        int tmp = 0;
+        boardState.moveWeight += (pieceTypeWeight * (Board.addPieceValue(capturedPiece, tmp)));
+    } //addMoveWeight
+
+    /**
+     * Move a piece.
+     * @param startingSquare The original square the piece was on
+     * @param endingSquare The square for the piece to end up 
+     * @param originalBoard The original board given
+     * @return A board with the piece moved.
+     */
     public static Board movePiece(int startingSquare, int endingSquare, Board originalBoard) {
         Board newBoard;
         /* Make a copy of the original game state */
@@ -110,18 +137,19 @@ public class PieceMoves {
                     for (int i = 0; i < 4; i++) {
                         pawnMoves[numMoves] = promotePiece(square, capture, currentState)[i];
                         pawnMoves[numMoves].moveWeight += 5;
-                        Board.addPieceValue(piece, pawnMoves[numMoves].moveWeight);
+                        addMoveWeight(piece, pawnMoves[numMoves], 3);
                         numMoves++;
                     } //for
                 } else {
                     pawnMoves[numMoves] = movePiece(square, capture, currentState);
-                    Board.addPieceValue(piece, pawnMoves[numMoves].moveWeight);
+                    addMoveWeight(piece, pawnMoves[numMoves], 3);
                     numMoves++;
                 } //if/else
             } //if
         } //for
 
         //Need to add en passant.
+
         return Arrays.copyOfRange(pawnMoves, 0, numMoves);
     }
 
@@ -150,8 +178,8 @@ public class PieceMoves {
                 knightMoves[numMoves] = movePiece(square, endingSquare, currentState);
 
                 /* If it is a capture, weight its move a little. */
-                if (Board.pieceColor(endingPiece) != color) {
-                    Board.addPieceValue(endingPiece, knightMoves[numMoves].moveWeight);
+                if (Board.pieceColor(endingPiece) != color && endingPiece != PieceTypes.EMPTY) {
+                    addMoveWeight(endingPiece, knightMoves[numMoves], 2);
                 }
                 numMoves++;
             } //if
@@ -250,6 +278,9 @@ public class PieceMoves {
                     /* If it was an opponents piece, it can't go any further */
                     if ((pieceOnSquare != PieceTypes.EMPTY) && Board.pieceColor(pieceOnSquare) != color) {
                         Board.addPieceValue(pieceOnSquare, slideMoves.get(slideMoves.size() - 1).moveWeight);
+                        if (pieceType == PieceTypes.WHITE_BISHOP) {
+                            Board.addPieceValue(pieceOnSquare, slideMoves.get(slideMoves.size() - 1).moveWeight);
+                        }
                         break;
                     } //if
                 } //while(true)

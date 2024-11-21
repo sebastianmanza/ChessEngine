@@ -23,8 +23,9 @@ public class badBot {
         int start;
         int end;
         boolean promotePiece = false;
-        Duration duration = Duration.ofSeconds(30);
-
+        pen.println("Enter starting duration");
+        input = eyes.nextLine();
+        Duration duration = Duration.ofSeconds(Integer.parseInt(input));
         playingBoard.printBoard(pen);
         pen.println("");
         while (!input.equals("QUIT")){
@@ -46,12 +47,11 @@ public class badBot {
             pen.println("Duration to run:");
             input = eyes.nextLine();
             duration = Duration.ofSeconds(Integer.parseInt(input));
-
-
             pen.print("\n----------------\n");
             playingBoard = PieceMoves.movePiece(start, end, playingBoard);
             if (promotePiece) {
                 playingBoard.setSquare(end, PieceTypes.BLACK_QUEEN);
+                promotePiece = false;
             }
             playingBoard.printBoard(pen);
             playingBoard.turnColor = playingBoard.oppColor();
