@@ -14,7 +14,7 @@ public class badBot {
       public static void main(String[] args) throws Exception{
         Scanner eyes = new Scanner(System.in);
         PrintWriter pen = new PrintWriter(System.out, true);
-        String input;
+        String input = "";
 
         Board playingBoard = new Board(PieceTypes.WHITE, PieceTypes.WHITE);
         playingBoard.startingPos();
@@ -23,11 +23,12 @@ public class badBot {
         int start;
         int end;
         boolean promotePiece = false;
-        pen.println("Enter starting duration");
+        pen.println("Enter starting duration:");
         input = eyes.nextLine();
         Duration duration = Duration.ofSeconds(Integer.parseInt(input));
         playingBoard.printBoard(pen);
         pen.println("");
+        input = "";
         while (!input.equals("QUIT")){
             pen.println("----------------");
             MCT searchTree = new MCT(playingBoard);

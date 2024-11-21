@@ -21,7 +21,7 @@ import utils.Board;
  */
 public class MCT {
     /** The exploration parameter, used to balance exploration vs exploitation */
-    public static final double EXPLORATION_PARAM = 1;
+    public static final double EXPLORATION_PARAM = 1.6;
 
     /** The root node of the move. (i.e. the move we are exploring from) */
     MCNode root;
@@ -35,6 +35,7 @@ public class MCT {
      */
     public MCT(Board currentMove) {
         this.root = new MCNode(currentMove, null);
+        this.root.playOuts = 1;
     }
 
     /**
@@ -77,6 +78,7 @@ public class MCT {
 
     // return bestNode.currentState;
     // } // search(Duration)
+
     public Board search(Duration duration) throws Exception {
         Instant start = Instant.now();
         Instant deadline = start.plus(duration);
@@ -103,8 +105,7 @@ public class MCT {
             } // for
         } // while
         /* Find the best move based on the node that was played the most */
-        MCNode bestNode = Collections.max(root.nextMoves,
-                Comparator.comparingInt(n -> n.playOuts));
+        MCNode bestNode = Collections.max(root.nextMoves, Comparator.comparingInt(n -> n.playOuts));
         pool.shutdown();
         MCNode selectNode = select(root);
         selectNode.currentState.printBoard(pen);
@@ -122,8 +123,8 @@ public class MCT {
      * @return The value of the node
      */
     public static double UCT(MCNode node) {
-
         /* If it's never been played, we should explore it */
+        
         if (node.playOuts == 0) {
             return Double.MAX_VALUE;
         } // if
@@ -143,13 +144,13 @@ public class MCT {
      */
     public static MCNode select(MCNode node) {
         while (!node.currentState.isGameOver()) {
-            if (node.nextMoves.isEmpty()) {
+            if (node.nextMoves.isEmpty() || node.playOuts == 0) {
                 return node;
             } // if
 
             /*
-             * Shuffle it so if none have been tried it selects something random, then
-             * return the node with the highest UCT
+             * Shuffle it so if none have been tried it selects something random, then return the
+             * node with the highest UCT
              */
             Collections.shuffle(node.nextMoves);
             node = Collections.max(node.nextMoves, Comparator.comparingDouble(MCT::UCT));
@@ -192,10 +193,9 @@ public class MCT {
     } // expand(node)
 
     /**
-     * Randomly simulates the finish of the game from the current game state.
-     * Note: current implementation creates lists of all future moves and chooses
-     * randomly.
-     * Could be made more efficient by creating just one random move?
+     * Randomly simulates the finish of the game from the current game state. Note: current
+     * implementation creates lists of all future moves and chooses randomly. Could be made more
+     * efficient by creating just one random move?
      * 
      * @param node The terminating node
      * @return the number of win-points
@@ -216,8 +216,8 @@ public class MCT {
             int material = gameState.material();
 
             /*
-             * If it's searched a little bit of depth and the material advantage is clear,
-             * give a win or a loss.
+             * If it's searched a little bit of depth and the material advantage is clear, give a
+             * win or a loss.
              */
             if (depth >= 20) {
                 if (gameState.turnColor != gameState.engineColor && material < -9) {
@@ -241,12 +241,12 @@ public class MCT {
     } // simulate(MCNode)
 
     /**
-     * Increments the total wins of every previous node by 1.0 if won, 0.5 if drawn,
-     * and 0 if lost. Increments total playouts by 1 for each regardless.
+     * Increments the total wins of every previous node by 1.0 if won, 0.5 if drawn, and 0 if lost.
+     * Increments total playouts by 1 for each regardless.
      * 
-     * @param node      The node to backpropagate from (terminating node)
+     * @param node The node to backpropagate from (terminating node)
      * @param winPoints The number of points to be given.
-     * @param root      The root of the MCT
+     * @param root The root of the MCT
      */
     public static void backPropagate(MCNode node, double winPoints, MCNode root) {
         MCNode curNode = node;
@@ -256,8 +256,8 @@ public class MCT {
             curNode = curNode.lastMove;
         } // while
 
-        /* Make sure the root is properly incremented. */
-        root.playOuts++;
-        root.wins += winPoints;
+        // /* Make sure the root is properly incremented. */
+        // root.playOuts++;
+        // root.wins += winPoints;
     } // backPropogate(MCNode, double, MCNode)
 } // MCT

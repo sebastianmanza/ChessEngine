@@ -326,9 +326,9 @@ public class Board {
      * @param kingColor The color of the king we are looking for
      * @return true if the king is gone, otherwise false.
      */
-    public boolean kingCapture(byte kingColor) {
+    public boolean kingCapture(byte king) {
         for (int i = 0; i < 64; i++) {
-            if (getSquare(i) == kingColor) {
+            if (getSquare(i) == king) {
                 return false;
             } // if
         } // for
@@ -353,13 +353,13 @@ public class Board {
      * position is not
      * legal.
      */
-    public boolean isLegal() {
+    public boolean inCheck(byte kingColor) {
         int[] straightMoves = { -8, -1, 1, 8 };
         int[] diagMoves = { -9, -7, 7, 9 };
         int[] LMoves = { -17, -15, -10, -6, 6, 10, 15, 17 };
         int[] pawnCapturesWhite = {-9, 9};
         int[] pawnCapturesBlack = {-7, 7};
-        int[] pawnCaptures = (this.turnColor != PieceTypes.WHITE) ? pawnCapturesWhite : pawnCapturesBlack;
+        int[] pawnCaptures = (kingColor != PieceTypes.WHITE) ? pawnCapturesWhite : pawnCapturesBlack;
         int[] kingMoves = { -9, -8, -7, -1, 1, 7, 8, 9 };
 
         int kingSquare = -1;
@@ -376,7 +376,7 @@ public class Board {
         byte oppQueen = PieceTypes.WHITE_QUEEN;
         byte oppKing = PieceTypes.WHITE_KING;
 
-        if (this.turnColor == PieceTypes.WHITE) {
+        if (kingColor == PieceTypes.WHITE) {
             piece = PieceTypes.WHITE_KING;
             oppPawn = PieceTypes.BLACK_PAWN;
             oppKnight = PieceTypes.BLACK_KNIGHT;
@@ -396,7 +396,7 @@ public class Board {
 
         /* If the king isn't on the board, its not a legal position */
         if (kingSquare < 0) {
-            return false;
+            return true;
         } // if
 
         int row = kingSquare % 8;
@@ -406,7 +406,7 @@ public class Board {
         for (int move : pawnCaptures) {
             if ((kingSquare + move <= 63) && (kingSquare + move >= 0)
                     && (getSquare(kingSquare + move) == oppPawn)) {
-                return false;
+                return true;
             } // if
         } // for
 
@@ -427,7 +427,7 @@ public class Board {
              */
             if ((Math.abs(endingRow - row) <= 2) && (Math.abs(endingCol - col) <= 2)
                     && (endingPiece == oppKnight)) {
-                return false;
+                return true;
             } // if
         } // for
 
@@ -474,7 +474,7 @@ public class Board {
                 /* If it was an opponents piece, it can't go any further */
                 if ((Board.pieceColor(endingPiece) != this.turnColor) && (endingPiece != PieceTypes.EMPTY)) {
                     if (endingPiece == oppQueen || endingPiece == oppRook) {
-                        return false;
+                        return true;
                     } // if
                     break;
                 } // if
@@ -520,7 +520,7 @@ public class Board {
                 /* If it was an opponents piece, it can't go any further */
                 if (Board.pieceColor(endingPiece) != this.turnColor && (endingPiece != PieceTypes.EMPTY)) {
                     if (endingPiece == oppQueen || endingPiece == oppBishop) {
-                        return false;
+                        return true;
                     } // if
                     break;
                 } // if
@@ -548,11 +548,11 @@ public class Board {
                     && ((endingPiece == PieceTypes.EMPTY)
                             || (Board.pieceColor(endingPiece) != this.turnColor))) {
                 if (endingPiece == oppKing) {
-                    return false;
+                    return true;
                 }
             } // if
         } // for
-        return true;
+        return false;
     } // isLegal()
 
     /**
@@ -578,7 +578,7 @@ public class Board {
             Board[] pieceMoves = generatePieceMoves(piece, square);
             ArrayList<Board> legalMoves = new ArrayList<>();
             for (Board pieceMove : pieceMoves) {
-                if (pieceMove.isLegal()) {
+                if (!pieceMove.inCheck(this.turnColor)) {
                     legalMoves.add(pieceMove);
                 } // if
             } // for
@@ -661,9 +661,12 @@ public class Board {
              * nextPositions
              */
             for (Board pieceMove : pieceMoves) {
-                if (pieceMove.isLegal()) {
+                if (!pieceMove.inCheck(this.turnColor)) {
                     pieceMove.turnColor = this.oppColor();
                     nextPositions[numPossibleMoves] = pieceMove;
+                    if (pieceMove.inCheck(this.oppColor())) {
+                        pieceMove.moveWeight += 3;
+                    }
                     numPossibleMoves++;
                     if (numPossibleMoves >= nextPositions.length) {
                         /* Expand the array if it's full. */
