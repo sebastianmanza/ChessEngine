@@ -22,6 +22,7 @@ public class badBot {
         
         int start;
         int end;
+        boolean promotePiece = false;
         Duration duration = Duration.ofSeconds(30);
 
         playingBoard.printBoard(pen);
@@ -38,6 +39,9 @@ public class badBot {
             pen.println("\nEnding Square:");
             input = eyes.nextLine();
             end = UIutils.tosquareIndex(input);
+            if (input.length() > 2) {
+                promotePiece = true;
+            }
 
             pen.println("Duration to run:");
             input = eyes.nextLine();
@@ -46,6 +50,9 @@ public class badBot {
 
             pen.print("\n----------------\n");
             playingBoard = PieceMoves.movePiece(start, end, playingBoard);
+            if (promotePiece) {
+                playingBoard.setSquare(end, PieceTypes.BLACK_QUEEN);
+            }
             playingBoard.printBoard(pen);
             playingBoard.turnColor = playingBoard.oppColor();
         } 

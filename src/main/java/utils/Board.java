@@ -33,6 +33,8 @@ public class Board {
 
     public boolean hasLegalMoves;
 
+    public int moveWeight = 1;
+
     /**
      * Builds a new board representing the games current state.
      *
@@ -215,6 +217,24 @@ public class Board {
         return (kingCapture(PieceTypes.WHITE_KING) || kingCapture(PieceTypes.BLACK_KING) || !hasLegalMoves);
     } // isGameOver
 
+    public static int addPieceValue(byte piece, int addTo) {
+        switch (piece) {
+            case PieceTypes.WHITE_PAWN -> addTo += 1;
+            case PieceTypes.BLACK_PAWN -> addTo -= 1;
+            case PieceTypes.WHITE_KNIGHT -> addTo += 3;
+            case PieceTypes.BLACK_KNIGHT -> addTo -= 3;
+            case PieceTypes.WHITE_BISHOP -> addTo += 3;
+            case PieceTypes.BLACK_BISHOP -> addTo -= 3;
+            case PieceTypes.WHITE_ROOK -> addTo += 5;
+            case PieceTypes.BLACK_ROOK -> addTo -= 5;
+            case PieceTypes.WHITE_QUEEN -> addTo += 9;
+            case PieceTypes.BLACK_QUEEN -> addTo -= 9;
+            default -> {
+            }
+        }
+        return addTo;
+    }
+
     public int material() {
         int material = 0;
         for (int i = 0; i < 64; i++) {
@@ -223,24 +243,7 @@ public class Board {
             if (piece == PieceTypes.EMPTY) {
                 continue;
             }
-            switch (piece) {
-                case PieceTypes.WHITE_PAWN -> material += 1;
-                case PieceTypes.BLACK_PAWN -> material -= 1;
-                case PieceTypes.WHITE_KNIGHT -> material += 3;
-                case PieceTypes.BLACK_KNIGHT -> material -= 3;
-                case PieceTypes.WHITE_BISHOP -> material += 3;
-                case PieceTypes.BLACK_BISHOP -> material -= 3;
-                case PieceTypes.WHITE_ROOK -> material += 5;
-                case PieceTypes.BLACK_ROOK -> material -= 5;
-                case PieceTypes.WHITE_QUEEN -> material += 8;
-                case PieceTypes.BLACK_QUEEN -> material -= 8;
-                case PieceTypes.WHITE_KING -> material += 1000;
-                case PieceTypes.BLACK_KING -> material -= 1000;
-                default -> throw new AssertionError();
-            }
-            if (this.turnColor == PieceTypes.WHITE) {
-                material = 0 - material;
-            } // if
+            addPieceValue(piece, material);
         }
         return material;
     }
@@ -529,6 +532,7 @@ public class Board {
                 onSquares.remove(selection);
             } else {
                 move = legalMoves.get(rand.nextInt(legalMoves.size()));
+                move.turnColor = oppColor();
                 return move;
             }
             updateLegalMoves(legalMoves);

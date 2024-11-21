@@ -79,6 +79,7 @@ public class PieceMoves {
             if (reachPromotionSquare) {
                 for (int i = 0; i < 4; i++) {
                     pawnMoves[numMoves] = promotePiece(square, forward, currentState)[i];
+                    pawnMoves[numMoves].moveWeight +=5;
                     numMoves++;
                 } //for
             } else {
