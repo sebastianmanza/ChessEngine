@@ -35,7 +35,6 @@ public class MCT {
      */
     public MCT(Board currentMove) {
         this.root = new MCNode(currentMove, null);
-        this.root.playOuts = 1000;
     }
 
     /**
@@ -79,6 +78,14 @@ public class MCT {
     // return bestNode.currentState;
     // } // search(Duration)
 
+    public static void printLikelyScenario(PrintWriter pen, MCNode root) throws Exception{
+        MCNode node = root;
+        while(!node.nextMoves.isEmpty()) {
+            node.currentState.printBoard(pen);
+            pen.println("Board was played " + node.playOuts + " times, with a winrate of " + (node.wins / node.playOuts));
+            node = Collections.max(node.nextMoves, Comparator.comparingInt(n -> n.playOuts));
+        } //while
+    }
     public Board search(Duration duration) throws Exception {
         Instant start = Instant.now();
         Instant deadline = start.plus(duration);
@@ -105,10 +112,9 @@ public class MCT {
             } // for
         } // while
         /* Find the best move based on the node that was played the most */
-        MCNode bestNode = Collections.max(root.nextMoves, Comparator.comparingInt(n -> n.playOuts));
+        MCNode bestNode = Collections.max(root.nextMoves, Comparator.comparingDouble(n -> n.wins));
         pool.shutdown();
-        MCNode selectNode = select(root);
-        selectNode.currentState.printBoard(pen);
+        printLikelyScenario(pen, bestNode);
         pen.println("Simulated " + iterations + " games.");
         pen.printf("Chosen move was played %d times with a simulated win rate of %.2f%%\n",
                 bestNode.playOuts, (bestNode.wins / bestNode.playOuts) * 100);
@@ -185,7 +191,7 @@ public class MCT {
         /* Return a weighted random node. */
         for (MCNode curNode : node.nextMoves) {
             totalWeight += curNode.currentState.moveWeight;
-            if (totalWeight > random) {
+            if (totalWeight >= random) {
                 return curNode;
             } // if
         } // for
@@ -250,14 +256,15 @@ public class MCT {
      */
     public static void backPropagate(MCNode node, double winPoints, MCNode root) {
         MCNode curNode = node;
-        while (curNode != root) {
+        while (curNode != null) {
             curNode.playOuts++;
-            curNode.wins += winPoints;
+            if (curNode.currentState.turnColor == curNode.currentState.engineColor) {
+                curNode.wins += winPoints;
+            } else {
+                curNode.wins += (1 - winPoints);
+            } //if/else
             curNode = curNode.lastMove;
         } // while
 
-        // /* Make sure the root is properly incremented. */
-        // root.playOuts++;
-        // root.wins += winPoints;
     } // backPropogate(MCNode, double, MCNode)
 } // MCT

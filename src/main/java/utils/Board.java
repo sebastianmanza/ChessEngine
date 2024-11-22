@@ -249,16 +249,16 @@ public class Board {
      */
     public static int addPieceValue(byte piece, int addTo) {
         switch (piece) {
-            case PieceTypes.WHITE_PAWN -> addTo += 1;
-            case PieceTypes.BLACK_PAWN -> addTo += 1;
-            case PieceTypes.WHITE_KNIGHT -> addTo += 3;
-            case PieceTypes.BLACK_KNIGHT -> addTo += 3;
-            case PieceTypes.WHITE_BISHOP -> addTo += 3;
-            case PieceTypes.BLACK_BISHOP -> addTo += 3;
-            case PieceTypes.WHITE_ROOK -> addTo += 5;
-            case PieceTypes.BLACK_ROOK -> addTo += 5;
-            case PieceTypes.WHITE_QUEEN -> addTo += 9;
-            case PieceTypes.BLACK_QUEEN -> addTo += 9;
+            case PieceTypes.WHITE_PAWN -> addTo += 2;
+            case PieceTypes.BLACK_PAWN -> addTo += 2;
+            case PieceTypes.WHITE_KNIGHT -> addTo += 6;
+            case PieceTypes.BLACK_KNIGHT -> addTo += 6;
+            case PieceTypes.WHITE_BISHOP -> addTo += 6;
+            case PieceTypes.BLACK_BISHOP -> addTo += 6;
+            case PieceTypes.WHITE_ROOK -> addTo += 10;
+            case PieceTypes.BLACK_ROOK -> addTo += 10;
+            case PieceTypes.WHITE_QUEEN -> addTo += 18;
+            case PieceTypes.BLACK_QUEEN -> addTo += 18;
             default -> {
             } //switch
         } //switch
@@ -664,10 +664,10 @@ public class Board {
             for (Board pieceMove : pieceMoves) {
                 if (!pieceMove.inCheck(this.turnColor)) {
                     pieceMove.turnColor = this.oppColor();
-                    nextPositions[numPossibleMoves] = pieceMove;
                     if (pieceMove.inCheck(this.oppColor())) {
-                        pieceMove.moveWeight += 3;
-                    }
+                        pieceMove.moveWeight += 5;
+                    } //if
+                    nextPositions[numPossibleMoves] = pieceMove;
                     numPossibleMoves++;
                     if (numPossibleMoves >= nextPositions.length) {
                         /* Expand the array if it's full. */
