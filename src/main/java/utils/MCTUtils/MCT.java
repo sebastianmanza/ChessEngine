@@ -7,10 +7,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import utils.Board;
 
@@ -21,12 +22,11 @@ import utils.Board;
  */
 public class MCT {
     /** The exploration parameter, used to balance exploration vs exploitation */
-    public static final double EXPLORATION_PARAM = 1.6;
+    public static final double EXPLORATION_PARAM = Math.sqrt(2);
 
     /** The root node of the move. (i.e. the move we are exploring from) */
     MCNode root;
 
-    static Random rand = new Random();
 
     /**
      * Creates a new Monte Carlo Treee
@@ -43,41 +43,6 @@ public class MCT {
      * @param duration The amount of time to run the search for
      * @return The best possible move
      */
-    // public Board search(Duration duration) throws Exception {
-    // Instant start = Instant.now();
-    // Instant deadline = start.plus(duration);
-    // AtomicInteger iterations = new AtomicInteger(0);
-    // MCNode bestNode;
-    // PrintWriter pen = new PrintWriter(System.out, true);
-    // ExecutorService executor = Executors.newFixedThreadPool(10);
-
-    // for (int i = 0; i < 10; i++) {
-    // executor.submit(() -> {
-    // /* Runs for a set duration of time */
-    // while (Instant.now().isBefore(deadline)) {
-    // MCNode selectedNode = select(root);
-    // MCNode expandedNode = expand(selectedNode);
-
-    // double winPoints = simulate(expandedNode);
-    // backPropagate(expandedNode, winPoints, root);
-    // iterations.incrementAndGet();
-    // } // while
-    // });
-    // }
-    // executor.shutdown();
-    // executor.awaitTermination(duration.toMillis(), TimeUnit.MILLISECONDS);
-    // /* Find the best move based on the node that was played the most */
-    // bestNode = Collections.max(root.nextMoves,
-    // Comparator.comparingInt(n -> n.playOuts));
-
-    // pen.println("Simulated " + iterations + " games.");
-    // pen.printf("Chosen move was played %d times with a simulated win rate of
-    // %.2f%%\n",
-    // bestNode.playOuts, (bestNode.wins / bestNode.playOuts) * 100);
-
-    // return bestNode.currentState;
-    // } // search(Duration)
-
     public static void printLikelyScenario(PrintWriter pen, MCNode root) throws Exception{
         MCNode node = root;
         while(!node.nextMoves.isEmpty()) {
@@ -89,7 +54,7 @@ public class MCT {
     public Board search(Duration duration) throws Exception {
         Instant start = Instant.now();
         Instant deadline = start.plus(duration);
-        int iterations = 0;
+        AtomicInteger iterations = new AtomicInteger(0);
         PrintWriter pen = new PrintWriter(System.out, true);
         ForkJoinPool pool = new ForkJoinPool();
 
@@ -98,11 +63,14 @@ public class MCT {
             MCNode selectedNode = select(root);
             MCNode expandedNode = expand(selectedNode);
 
-            /* Runs parallel simulations for the expanded node (10 games at a time) */
+            /* Runs parallel simulations for the expanded node */
             List<Callable<Double>> tasks = new ArrayList<>();
-            for (int i = 0; i < 10; i++) {
+
+            int numSimulations = Runtime.getRuntime().availableProcessors();
+
+            for (int i = 0; i < numSimulations; i++) {
                 tasks.add(() -> simulate(expandedNode));
-                iterations++;
+                iterations.incrementAndGet();
             } // for
 
             List<Future<Double>> results = pool.invokeAll(tasks);
@@ -112,12 +80,12 @@ public class MCT {
             } // for
         } // while
         /* Find the best move based on the node that was played the most */
-        MCNode bestNode = Collections.max(root.nextMoves, Comparator.comparingDouble(n -> n.wins));
+        MCNode bestNode = Collections.max(root.nextMoves, Comparator.comparingInt(n -> n.playOuts));
         pool.shutdown();
-        printLikelyScenario(pen, bestNode);
+        //printLikelyScenario(pen, bestNode);
         pen.println("Simulated " + iterations + " games.");
         pen.printf("Chosen move was played %d times with a simulated win rate of %.2f%%\n",
-                bestNode.playOuts, (bestNode.wins / bestNode.playOuts) * 100);
+               bestNode.playOuts, (bestNode.wins / bestNode.playOuts) * 100);
 
         return bestNode.currentState;
     } // search(Duration)
@@ -129,8 +97,8 @@ public class MCT {
      * @return The value of the node
      */
     public static double UCT(MCNode node) {
+
         /* If it's never been played, we should explore it */
-        
         if (node.playOuts == 0) {
             return Double.MAX_VALUE;
         } // if
@@ -185,7 +153,7 @@ public class MCT {
         if (node.nextMoves.isEmpty()) {
             return node;
         } // if
-        int random = rand.nextInt(totalWeight);
+        int random = ThreadLocalRandom.current().nextInt(totalWeight);
         totalWeight = 0;
 
         /* Return a weighted random node. */
@@ -195,7 +163,7 @@ public class MCT {
                 return curNode;
             } // if
         } // for
-        return node.nextMoves.get(rand.nextInt(node.nextMoves.size()));
+        return node.nextMoves.get(ThreadLocalRandom.current().nextInt(node.nextMoves.size()));
     } // expand(node)
 
     /**
@@ -207,13 +175,14 @@ public class MCT {
      * @return the number of win-points
      */
 
-    public static double simulate(MCNode node) {
+    public static double simulate(MCNode node) throws Exception{
         Board gameState = node.currentState;
         int depth = 0;
+        PrintWriter pen = new PrintWriter(System.out, true);
 
         /* Run the loop while the game is undecided */
         while (!gameState.isGameOver()) {
-            Board nextGameState = gameState.ranWeightedMove(rand);
+            Board nextGameState = gameState.ranWeightedMove(ThreadLocalRandom.current());
             if (nextGameState == null) {
                 break;
             } // if
@@ -225,13 +194,11 @@ public class MCT {
              * If it's searched a little bit of depth and the material advantage is clear, give a
              * win or a loss.
              */
-            if (depth >= 20) {
                 if (gameState.turnColor != gameState.engineColor && material < -9) {
                     return 0.0;
-                } else if (gameState.turnColor == gameState.engineColor && material > 12) {
+                } else if (gameState.turnColor == gameState.engineColor && material > 9) {
                     return 1.0;
                 } // if/else
-            } // if
 
             /* If it's searched far in, assume a weighted draw. */
             if (depth++ >= 200) {
@@ -242,7 +209,10 @@ public class MCT {
                 } else
                     return 0.5;
             } // if
+            // gameState.printBoard(pen);
+            // pen.println("Material" + gameState.material());
         } // while
+        //pen.println("Points" + gameState.vicPoints());
         return gameState.vicPoints();
     } // simulate(MCNode)
 
@@ -254,11 +224,11 @@ public class MCT {
      * @param winPoints The number of points to be given.
      * @param root The root of the MCT
      */
-    public static void backPropagate(MCNode node, double winPoints, MCNode root) {
+    public static synchronized void backPropagate(MCNode node, double winPoints, MCNode root) {
         MCNode curNode = node;
         while (curNode != null) {
             curNode.playOuts++;
-            if (curNode.currentState.turnColor == curNode.currentState.engineColor) {
+            if (curNode.currentState.turnColor != curNode.currentState.engineColor) {
                 curNode.wins += winPoints;
             } else {
                 curNode.wins += (1 - winPoints);

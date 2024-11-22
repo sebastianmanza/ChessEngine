@@ -32,7 +32,8 @@ public class Board {
     public byte engineColor;
 
     /**
-     * A boolean representing if the board has legal moves, updated whenever a function that creates moves is called.
+     * A boolean representing if the board has legal moves, updated whenever a
+     * function that creates moves is called.
      */
     public boolean hasLegalMoves;
 
@@ -58,7 +59,7 @@ public class Board {
         this.hasLegalMoves = true;
         this.moveWeight = 1;
         this.pieceCount = 0;
-    } //Board()
+    } // Board()
 
     /**
      * Sets a square on the board to a piece.
@@ -139,24 +140,25 @@ public class Board {
         setSquare(39, PieceTypes.BLACK_KING);
     } // startingPos
 
-
     /**
      * Updates the legal moves boolean based off of a nextMoves array.
      * Meant to be run while the array is created.
+     * 
      * @param moves An array of the possible next moves.
      */
-    public void updateLegalMoves(Board[] moves) {
-        hasLegalMoves = (moves.length > 0);
+    public void updateLegalMoves(int moveNum) {
+        hasLegalMoves = (moveNum > 0);
     } // updateLegalMoves
 
     /**
      * Updates the legal moves boolean based off of a nextMoves list.
      * Meant to be run while the list is created.
+     * 
      * @param moves A list of the possible moves.
      */
     public void updateLegalMoves(ArrayList<Board> moves) {
         hasLegalMoves = !moves.isEmpty();
-    } //updateLegalMoves
+    } // updateLegalMoves
 
     /**
      * Prints the board in a basic textual form
@@ -238,11 +240,12 @@ public class Board {
      */
     public boolean isGameOver() {
         /* Make sure the kings are still there and there are legal moves left */
-        return (kingCapture(PieceTypes.WHITE_KING) || kingCapture(PieceTypes.BLACK_KING) || !hasLegalMoves);
+        return (!hasLegalMoves);
     } // isGameOver
 
     /**
      * Adds the value of a piece to a value.
+     * 
      * @param piece The piece we are evaluating.
      * @param addTo The number to add it to.
      * @return An integer representing the new value.
@@ -260,13 +263,14 @@ public class Board {
             case PieceTypes.WHITE_QUEEN -> addTo += 18;
             case PieceTypes.BLACK_QUEEN -> addTo += 18;
             default -> {
-            } //switch
-        } //switch
+            } // switch
+        } // switch
         return addTo;
-    } //addPieceValue(byte, int)
+    } // addPieceValue(byte, int)
 
     /**
      * Evaluates the material advantage on the board.
+     * 
      * @return an integer representing the material advantage.
      */
     public int material() {
@@ -276,7 +280,7 @@ public class Board {
             /* If the square is empty ignore it. */
             if (piece == PieceTypes.EMPTY) {
                 continue;
-            } //if
+            } // if
             switch (piece) {
                 case PieceTypes.WHITE_PAWN -> material += 1;
                 case PieceTypes.BLACK_PAWN -> material -= 1;
@@ -289,15 +293,15 @@ public class Board {
                 case PieceTypes.WHITE_QUEEN -> material += 9;
                 case PieceTypes.BLACK_QUEEN -> material -= 9;
                 default -> {
-                } //return nothing for default
-            } //switch
+                } // return nothing for default
+            } // switch
             this.pieceCount++;
             if (this.engineColor == PieceTypes.BLACK) {
                 material = 0 - material;
-            } //if
-        } //for
+            } // if
+        } // for
         return material;
-    } //material()
+    } // material()
 
     /**
      * Calculates the number of points won or lost by the engine at the end of a
@@ -308,13 +312,13 @@ public class Board {
      *         or draw
      */
     public double vicPoints() {
-        if (kingCapture(PieceTypes.WHITE_KING) && engineColor == PieceTypes.WHITE) {
+        if (inCheck(PieceTypes.WHITE) && engineColor == PieceTypes.WHITE) {
             return 0.0;
-        } else if (kingCapture(PieceTypes.BLACK_KING) && engineColor == PieceTypes.BLACK) {
+        } else if (inCheck(PieceTypes.BLACK) && engineColor == PieceTypes.BLACK) {
             return 0.0;
-        } else if (kingCapture(PieceTypes.WHITE_KING) && engineColor == PieceTypes.BLACK) {
+        } else if (inCheck(PieceTypes.WHITE) && engineColor == PieceTypes.BLACK) {
             return 1.0;
-        } else if (kingCapture(PieceTypes.BLACK_KING) && engineColor == PieceTypes.WHITE) {
+        } else if (inCheck(PieceTypes.BLACK) && engineColor == PieceTypes.WHITE) {
             return 1.0;
         } // if/else
         return 0.5;
@@ -357,9 +361,9 @@ public class Board {
         int[] straightMoves = { -8, -1, 1, 8 };
         int[] diagMoves = { -9, -7, 7, 9 };
         int[] LMoves = { -17, -15, -10, -6, 6, 10, 15, 17 };
-        int[] pawnCapturesWhite = {-9, 9};
-        int[] pawnCapturesBlack = {-7, 7};
-        int[] pawnCaptures = (kingColor != PieceTypes.WHITE) ? pawnCapturesWhite : pawnCapturesBlack;
+        int[] pawnCapturesWhite = { -9, 7 };
+        int[] pawnCapturesBlack = { -7, 9 };
+        int[] pawnCaptures = (kingColor == PieceTypes.WHITE) ? pawnCapturesWhite : pawnCapturesBlack;
         int[] kingMoves = { -9, -8, -7, -1, 1, 7, 8, 9 };
 
         int kingSquare = -1;
@@ -545,11 +549,8 @@ public class Board {
              * around.
              */
             if ((Math.abs(endingRow - row) <= 1) && (Math.abs(endingCol - col) <= 1)
-                    && ((endingPiece == PieceTypes.EMPTY)
-                            || (Board.pieceColor(endingPiece) != this.turnColor))) {
-                if (endingPiece == oppKing) {
-                    return true;
-                }
+                    && ((endingPiece == oppKing))) {
+                return true;
             } // if
         } // for
         return false;
@@ -596,36 +597,41 @@ public class Board {
     }
 
     /**
-     * Creates a random weighted move from all possible next moves. More likely to return a capture of higher value.
+     * Creates a random weighted move from all possible next moves. More likely to
+     * return a capture of higher value.
+     * 
      * @param rand A random object.
      * @return A board representing the move
      */
-    public Board ranWeightedMove(Random rand) {
+    public Board ranWeightedMove(Random rand) throws Exception {
         Board[] nextMoves = this.nextMoves();
         int totalWeight = 0;
+        PrintWriter pen = new PrintWriter(System.out, true);
 
         /* If there aren't any legal moves, return null */
         if (nextMoves.length == 0) {
-            return null; 
-        } //if
+            return null;
+        } // if
 
         for (Board move : nextMoves) {
-            totalWeight+= move.moveWeight;
-        } //for
+            totalWeight += move.moveWeight;
+        } // for
 
         int random = rand.nextInt(totalWeight);
 
         totalWeight = 0;
         /* Return the first move greater than the random number. */
         for (Board move : nextMoves) {
-            totalWeight+=move.moveWeight;
-            if (totalWeight > random) {
+            totalWeight += move.moveWeight;
+            if (totalWeight >= random) {
                 move.turnColor = this.oppColor();
+                // move.printBoard(pen);
+                // pen.println(move.moveWeight);
                 return move;
-            } //if
-        } //for
+            } // if
+        } // for
         return null;
-    } //ranWeightedMove(Random)
+    } // ranWeightedMove(Random)
 
     /**
      * Creates an array of all possible next moves from this position.
@@ -662,11 +668,11 @@ public class Board {
              * nextPositions
              */
             for (Board pieceMove : pieceMoves) {
+                pieceMove.turnColor = this.oppColor();
                 if (!pieceMove.inCheck(this.turnColor)) {
-                    pieceMove.turnColor = this.oppColor();
                     if (pieceMove.inCheck(this.oppColor())) {
                         pieceMove.moveWeight += 5;
-                    } //if
+                    } // if
                     nextPositions[numPossibleMoves] = pieceMove;
                     numPossibleMoves++;
                     if (numPossibleMoves >= nextPositions.length) {
@@ -678,7 +684,7 @@ public class Board {
         } // for
 
         /* Update if there are legal moves left. */
-        updateLegalMoves(nextPositions);
+        updateLegalMoves(numPossibleMoves);
         /* Return only the legal game states in a correctly sized array */
         return Arrays.copyOf(nextPositions, numPossibleMoves);
     } // nextMoves
@@ -686,7 +692,7 @@ public class Board {
     /**
      * Generates an array of all possible moves by a particular piece on the board.
      *
-     * @param piece The piece to generate moves for
+     * @param piece  The piece to generate moves for
      * @param square The square the piece is located on
      * @return An array of all possible moves for the piece.
      */
@@ -711,7 +717,8 @@ public class Board {
                 pieceMoves = PieceMoves.slideMoves(square, color, PieceTypes.WHITE_ROOK, this);
             case PieceTypes.WHITE_QUEEN, PieceTypes.BLACK_QUEEN ->
                 pieceMoves = PieceMoves.slideMoves(square, color, PieceTypes.WHITE_QUEEN, this);
-            case PieceTypes.WHITE_KING, PieceTypes.BLACK_KING -> pieceMoves = PieceMoves.kingMoves(square, color, this);
+            case PieceTypes.WHITE_KING, PieceTypes.BLACK_KING -> 
+                pieceMoves = PieceMoves.kingMoves(square, color, this);
             default -> throw new AssertionError();
         } // switch
         return pieceMoves;
@@ -719,6 +726,7 @@ public class Board {
 
     /**
      * Make a deep copy of the board.
+     * 
      * @return the copied board
      */
     public Board copyBoard() {

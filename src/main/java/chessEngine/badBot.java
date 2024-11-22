@@ -14,12 +14,14 @@ public class badBot {
       public static void main(String[] args) throws Exception{
         Scanner eyes = new Scanner(System.in);
         PrintWriter pen = new PrintWriter(System.out, true);
-        String input = "";
+        String input;
 
         Board playingBoard = new Board(PieceTypes.WHITE, PieceTypes.WHITE);
-        playingBoard.startingPos();
+        // playingBoard.setSquare(0, PieceTypes.WHITE_KING);
+        // playingBoard.setSquare(2, PieceTypes.BLACK_KING);
+        // playingBoard.setSquare(9, PieceTypes.BLACK_QUEEN);
 
-        
+        playingBoard.startingPos();
         int start;
         int end;
         boolean promotePiece = false;
@@ -43,7 +45,7 @@ public class badBot {
             end = UIutils.tosquareIndex(input);
             if (input.length() > 2) {
                 promotePiece = true;
-            }
+            } //if
 
             pen.println("Duration to run:");
             input = eyes.nextLine();
@@ -53,7 +55,7 @@ public class badBot {
             if (promotePiece) {
                 playingBoard.setSquare(end, PieceTypes.BLACK_QUEEN);
                 promotePiece = false;
-            }
+            } //if
             playingBoard.printBoard(pen);
             playingBoard.turnColor = playingBoard.oppColor();
         } 
