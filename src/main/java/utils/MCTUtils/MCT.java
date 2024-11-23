@@ -80,9 +80,12 @@ public class MCT {
             } // for
         } // while
         /* Find the best move based on the node that was played the most */
+        if (root.nextMoves.isEmpty()) {
+            return null;
+        }
         MCNode bestNode = Collections.max(root.nextMoves, Comparator.comparingInt(n -> n.playOuts));
         pool.shutdown();
-        //printLikelyScenario(pen, bestNode);
+        printLikelyScenario(pen, bestNode);
         pen.println("Simulated " + iterations + " games.");
         pen.printf("Chosen move was played %d times with a simulated win rate of %.2f%%\n",
                bestNode.playOuts, (bestNode.wins / bestNode.playOuts) * 100);
@@ -184,8 +187,9 @@ public class MCT {
         while (!gameState.isGameOver()) {
             Board nextGameState = gameState.ranWeightedMove(ThreadLocalRandom.current());
             if (nextGameState == null) {
-                break;
+                return gameState.vicPoints();
             } // if
+            int beginningMaterial = gameState.material();
 
             gameState = nextGameState;
             int material = gameState.material();
@@ -194,11 +198,13 @@ public class MCT {
              * If it's searched a little bit of depth and the material advantage is clear, give a
              * win or a loss.
              */
+            if (beginningMaterial <= 9) {
                 if (gameState.turnColor != gameState.engineColor && material < -9) {
                     return 0.0;
                 } else if (gameState.turnColor == gameState.engineColor && material > 9) {
                     return 1.0;
                 } // if/else
+            } //if
 
             /* If it's searched far in, assume a weighted draw. */
             if (depth++ >= 200) {
@@ -209,7 +215,7 @@ public class MCT {
                 } else
                     return 0.5;
             } // if
-            // gameState.printBoard(pen);
+            //gameState.printBoard(pen);
             // pen.println("Material" + gameState.material());
         } // while
         //pen.println("Points" + gameState.vicPoints());

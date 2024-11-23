@@ -376,19 +376,194 @@ public class PieceMoves {
         return Arrays.copyOfRange(kingMoves, 0, numMoves);
     } // kingMoves
 
-    // public static boolean inCheck(Board boardToCheck, byte kingColor) {
-    //     /* The king we want to see if is in check. */
-    //     byte piece = (kingColor == PieceTypes.WHITE) ? PieceTypes.WHITE_KING : PieceTypes.BLACK_KING;
+    public static boolean inCheck(Board boardToCheck, byte kingColor) {
+        /* The king we want to see if is in check. */
+        byte piece = (kingColor == PieceTypes.WHITE) ? PieceTypes.WHITE_KING : PieceTypes.BLACK_KING;
         
-    //     int kingSquare = -1;
+        int kingSquare = -1;
 
-    //     for (int i = 0; i < 64; i++) {
-           
-    //         /* Find the King Square */
-    //         if (boardToCheck.getSquare(i) == piece) {
-    //             kingSquare = i;
-    //             break;
-    //         } //if
-    //     } //for
-    // }
+        for (int i = 0; i < 64; i++) {      
+            /* Find the king's square */
+            if (boardToCheck.getSquare(i) == piece) {
+                kingSquare = i;
+                break;
+            } //if
+        } //for
+
+        if (kingSquare == -1) {
+            return true;
+        } //if
+
+        int row = kingSquare % 8;
+        int col = kingSquare / 8;
+
+        return (inCheckFromPawns(kingSquare, piece, boardToCheck) || inCheckFromKnights(kingSquare, piece, boardToCheck) 
+        || inCheckFromSlidePiece(kingSquare, piece, boardToCheck) || inCheckfromKings(kingSquare, piece, boardToCheck));
+    }
+
+    public static boolean inCheckFromPawns(int kingSquare, byte king, Board board) {
+        int[] pawnChecks = (Board.pieceColor(king) == PieceTypes.WHITE) ? new int[] {-9, 7} : new int[] {-7, 9};
+
+        byte oppPawn = (Board.pieceColor(king) == PieceTypes.WHITE) ? PieceTypes.BLACK_PAWN : PieceTypes.WHITE_PAWN;
+        for (int move : pawnChecks) {
+            int checkSquare = kingSquare + move;
+
+            /* If it is out of bounds its not possible */
+            if (checkSquare > 63 || checkSquare < 0) {
+                continue;
+            } //if
+
+            /* If the square you move to is an opposite pawn, youre in check. */
+            if (board.getSquare(checkSquare) == oppPawn) {
+                return true;
+            } //if
+        } //for
+        return false;
+    }
+
+    public static boolean inCheckFromKnights(int kingSquare, byte king, Board board) {
+        int[] knightChecks = { -17, -15, -10, -6, 6, 10, 15, 17 };
+        int row = kingSquare % 8;
+        int col = kingSquare / 8;
+
+        byte oppKnight = (Board.pieceColor(king) == PieceTypes.WHITE) ? PieceTypes.BLACK_KNIGHT : PieceTypes.WHITE_KNIGHT;
+        for (int move : knightChecks) {
+            int checkSquare = kingSquare + move;
+            int checkRow = checkSquare % 8;
+            int checkCol = checkSquare / 8;
+            
+            /* If it is out of bounds its not possible */
+            if (checkSquare > 63 || checkSquare < 0) {
+                continue;
+            } //if
+
+            byte checkPiece = board.getSquare(checkSquare);
+
+            if ((Math.abs(checkRow - row) > 2) || (Math.abs(checkCol - col)) > 2) {
+                continue;
+            } //if
+
+            if (checkPiece == oppKnight)
+                return true;
+        } //for
+        return false;
+    } //inCheckFromKnights(int, byte, Board
+    
+    public static boolean inCheckFromSlidePiece(int kingSquare, byte king, Board board) {
+        int[] horizChecks = { -8, -1, 1, 8 };
+        int[] diagChecks = { -9, -7, 7, 9 };
+        int row = kingSquare % 8;
+        int col = kingSquare / 8;
+
+        byte oppBishop = (Board.pieceColor(king) == PieceTypes.WHITE) ? PieceTypes.BLACK_BISHOP : PieceTypes.WHITE_BISHOP;
+        byte oppRook = (Board.pieceColor(king) == PieceTypes.WHITE) ? PieceTypes.BLACK_ROOK : PieceTypes.WHITE_ROOK;
+        byte oppQueen = (Board.pieceColor(king) == PieceTypes.WHITE) ? PieceTypes.BLACK_QUEEN : PieceTypes.WHITE_QUEEN;
+
+        int checkSquare = kingSquare;
+        /* Check for bishops and queens */
+        for (int move: diagChecks) {
+            /* Move in the diagonal direction */
+            while (true) { 
+                checkSquare += move;
+                int checkRow = checkSquare % 8;
+                int checkCol = checkSquare / 8;
+
+                /*Col and row must be the same */
+                if (Math.abs(checkRow - row) != Math.abs(checkCol - col)) {
+                    break;
+                } //if
+
+                if (checkSquare > 63 || checkSquare < 0) {
+                    break;
+                }
+
+                byte checkPiece = board.getSquare(checkSquare);
+
+                /* If it is empty, skip to the next */
+                if (checkPiece == PieceTypes.EMPTY) {
+                    continue;
+                }
+
+                /* If it is a piece of the same color, break the loop*/
+                if (Board.pieceColor(checkPiece) == board.turnColor) {
+                    break;
+                } //if
+
+                /* If it is an opposite bishop or queen, youre in check */
+                if (checkPiece == oppQueen || checkPiece == oppBishop) {
+                    return true;
+                } else {
+                    break;
+                } //if/else
+            } //while(true)
+        } //for
+
+        for (int move: horizChecks) {
+            /* Move in the horizontal direction */
+            while (true) {
+                checkSquare += move;
+                int checkRow = checkSquare % 8;
+                int checkCol = checkSquare / 8;
+
+                /*Col must be the same and row must be the same */
+                if (checkCol != col && checkRow != row) {
+                    break;
+                } //if
+
+                if (checkSquare > 63 || checkSquare < 0) {
+                    break;
+                }
+
+                byte checkPiece = board.getSquare(checkSquare);
+
+                if (checkPiece == PieceTypes.EMPTY) {
+                    continue;
+                }
+
+                if (Board.pieceColor(checkPiece) == board.turnColor) {
+                    break;
+                }
+
+                if (checkPiece == oppQueen || checkPiece == oppRook) {
+                    return true;
+                } else {
+                    break;
+                } //if/else
+            } //while(true)
+        } //for
+        /* If nothing has been found, its not in check from a slide piece */
+        return false;
+    } //inCheckFromSlidePiece(int, byte, board)
+
+    public static boolean inCheckfromKings(int kingSquare, byte king, Board board) {
+        int[] kingChecks = { -9, -8, -7, -1, 1, 7, 8, 9};
+        int row = kingSquare % 8;
+        int col = kingSquare / 8;
+
+        byte oppKing = (Board.pieceColor(king) == PieceTypes.WHITE) ? PieceTypes.BLACK_KING : PieceTypes.WHITE_KING;
+
+        for (int move : kingChecks) {
+            int checkSquare = kingSquare + move;
+            int checkRow = checkSquare % 8;
+            int checkCol = checkSquare / 8;
+
+
+            /* Check if its in bounds */
+            if (checkSquare < 0 || checkSquare > 63) {
+                break;
+            }
+
+            byte checkPiece = board.getSquare(checkSquare);
+
+            if (Math.abs(checkRow - row) > 1 || Math.abs(checkCol - col) > 1) {
+                break;
+            }
+
+            if (checkPiece == oppKing) {
+                return true;
+            }
+
+        }
+        return false;
+    }
 } // class PieceMoves

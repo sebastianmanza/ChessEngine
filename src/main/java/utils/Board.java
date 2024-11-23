@@ -312,13 +312,13 @@ public class Board {
      *         or draw
      */
     public double vicPoints() {
-        if (inCheck(PieceTypes.WHITE) && engineColor == PieceTypes.WHITE) {
+        if (PieceMoves.inCheck(this, PieceTypes.WHITE) && engineColor == PieceTypes.WHITE) {
             return 0.0;
-        } else if (inCheck(PieceTypes.BLACK) && engineColor == PieceTypes.BLACK) {
+        } else if (PieceMoves.inCheck(this, PieceTypes.BLACK) && engineColor == PieceTypes.BLACK) {
             return 0.0;
-        } else if (inCheck(PieceTypes.WHITE) && engineColor == PieceTypes.BLACK) {
+        } else if (PieceMoves.inCheck(this, PieceTypes.WHITE) && engineColor == PieceTypes.BLACK) {
             return 1.0;
-        } else if (inCheck(PieceTypes.BLACK) && engineColor == PieceTypes.WHITE) {
+        } else if (PieceMoves.inCheck(this, PieceTypes.BLACK) && engineColor == PieceTypes.WHITE) {
             return 1.0;
         } // if/else
         return 0.5;
@@ -351,250 +351,6 @@ public class Board {
             return PieceTypes.WHITE;
         } // if/else
     } // oppColor()
-
-    /**
-     * Checks if the game state is a legal position. If the king is in check, the
-     * position is not
-     * legal.
-     */
-    public boolean inCheck(byte kingColor) {
-        int[] straightMoves = { -8, -1, 1, 8 };
-        int[] diagMoves = { -9, -7, 7, 9 };
-        int[] LMoves = { -17, -15, -10, -6, 6, 10, 15, 17 };
-        int[] pawnCapturesWhite = { -9, 7 };
-        int[] pawnCapturesBlack = { -7, 9 };
-        int[] pawnCaptures = (kingColor == PieceTypes.WHITE) ? pawnCapturesWhite : pawnCapturesBlack;
-        int[] kingMoves = { -9, -8, -7, -1, 1, 7, 8, 9 };
-
-        int kingSquare = -1;
-
-        /*
-         * Set the piece to the king we're looking for, and the opposing pieces
-         * correctly.
-         */
-        byte piece = PieceTypes.BLACK_KING;
-        byte oppPawn = PieceTypes.WHITE_PAWN;
-        byte oppBishop = PieceTypes.WHITE_BISHOP;
-        byte oppKnight = PieceTypes.WHITE_KNIGHT;
-        byte oppRook = PieceTypes.WHITE_ROOK;
-        byte oppQueen = PieceTypes.WHITE_QUEEN;
-        byte oppKing = PieceTypes.WHITE_KING;
-
-        if (kingColor == PieceTypes.WHITE) {
-            piece = PieceTypes.WHITE_KING;
-            oppPawn = PieceTypes.BLACK_PAWN;
-            oppKnight = PieceTypes.BLACK_KNIGHT;
-            oppBishop = PieceTypes.BLACK_BISHOP;
-            oppRook = PieceTypes.BLACK_ROOK;
-            oppQueen = PieceTypes.BLACK_QUEEN;
-            oppKing = PieceTypes.BLACK_KING;
-        } // if
-
-        /* Find the correct kings square. */
-        for (int i = 0; i < 64; i++) {
-            if (this.getSquare(i) == piece) {
-                kingSquare = i;
-                break;
-            } // if
-        } // if
-
-        /* If the king isn't on the board, its not a legal position */
-        if (kingSquare < 0) {
-            return true;
-        } // if
-
-        int row = kingSquare % 8;
-        int col = kingSquare / 8;
-
-        /* Check if the king is in check from any pawns. */
-        for (int move : pawnCaptures) {
-            if ((kingSquare + move <= 63) && (kingSquare + move >= 0)
-                    && (getSquare(kingSquare + move) == oppPawn)) {
-                return true;
-            } // if
-        } // for
-
-        /* Check if the king is in check from any knights */
-        for (int move : LMoves) {
-            int endingSquare = kingSquare + move;
-            int endingRow = endingSquare % 8;
-            int endingCol = endingSquare / 8;
-
-            if (endingSquare < 0 || endingSquare > 63) {
-                continue;
-            } // if
-            byte endingPiece = getSquare(endingSquare);
-
-            /*
-             * Checks to make sure it doesn't wrap around, is in bounds, and is a opposing
-             * knight
-             */
-            if ((Math.abs(endingRow - row) <= 2) && (Math.abs(endingCol - col) <= 2)
-                    && (endingPiece == oppKnight)) {
-                return true;
-            } // if
-        } // for
-
-        /*
-         * Check if the king is in check from any rooks or queens. This occurs if the
-         * first piece it
-         * sees in any straight direction is an opposite rook or queen.
-         */
-        for (int move : straightMoves) {
-            int endingSquare = kingSquare;
-            int endingRow;
-            int endingCol;
-            byte endingPiece;
-
-            /*
-             * Checks that it doesn't wrap around, is in legal bounds, and is an opposing R
-             * or Q
-             */
-            /* Continue moving the piece in the direction while it can */
-            while (true) {
-                endingSquare += move;
-                endingRow = endingSquare % 8;
-                endingCol = endingSquare / 8;
-
-                /*
-                 * Either the columns or the rows must still be the same to avoid a wraparound.
-                 */
-                if (endingCol != col && endingRow != row) {
-                    break;
-                } // if
-
-                /* Check that it remains within bounds. */
-                if ((endingSquare > 63 || (endingSquare < 0))) {
-                    break;
-                } // if
-
-                endingPiece = this.getSquare(endingSquare);
-
-                /* Check that the square is either empty or an opposing color. */
-                if (endingPiece != PieceTypes.EMPTY && pieceColor(endingPiece) == this.turnColor) {
-                    break;
-                } // if
-
-                /* If it was an opponents piece, it can't go any further */
-                if ((Board.pieceColor(endingPiece) != this.turnColor) && (endingPiece != PieceTypes.EMPTY)) {
-                    if (endingPiece == oppQueen || endingPiece == oppRook) {
-                        return true;
-                    } // if
-                    break;
-                } // if
-            } // while(true)
-        }
-        /*
-         * Check if the king is in check from any bishops or queens. See above, but
-         * diagonal
-         */
-        for (int move : diagMoves) {
-            int endingSquare = kingSquare;
-            int endingRow;
-            int endingCol;
-            byte endingPiece;
-
-            /* Continue moving the piece in the direction while it can */
-            while (true) {
-                endingSquare += move;
-                endingRow = endingSquare % 8;
-                endingCol = endingSquare / 8;
-
-                /*
-                 * The difference between the starting column and ending column and starting row
-                 * and
-                 * ending row must be equal for it to be a valid move
-                 */
-                if (Math.abs(endingCol - col) != Math.abs(endingRow - row)) {
-                    break;
-                } // if
-
-                /* Check that it remains within bounds. */
-                if ((endingSquare > 63 || (endingSquare < 0))) {
-                    break;
-                } // if
-
-                endingPiece = this.getSquare(endingSquare);
-
-                /* Check that the square is either empty or an opposing color. */
-                if (endingPiece != PieceTypes.EMPTY && pieceColor(endingPiece) == this.turnColor) {
-                    break;
-                } // if
-
-                /* If it was an opponents piece, it can't go any further */
-                if (Board.pieceColor(endingPiece) != this.turnColor && (endingPiece != PieceTypes.EMPTY)) {
-                    if (endingPiece == oppQueen || endingPiece == oppBishop) {
-                        return true;
-                    } // if
-                    break;
-                } // if
-            } // while(true)
-        } // for
-        /* Check if it is in check from the opposing king. */
-        for (int move : kingMoves) {
-            int endingSquare = kingSquare + move;
-            int endingRow = endingSquare % 8;
-            int endingCol = endingSquare / 8;
-
-            if ((endingSquare < 0) || (endingSquare > 63)) {
-                continue;
-            } // if
-            byte endingPiece = this.getSquare(endingSquare);
-
-            /*
-             * The move is valid if it is in bounds, and either to an empty square or to a
-             * square
-             * with an opponent piece. It also must be within 1 row and 1 column, or it has
-             * wrapped
-             * around.
-             */
-            if ((Math.abs(endingRow - row) <= 1) && (Math.abs(endingCol - col) <= 1)
-                    && ((endingPiece == oppKing))) {
-                return true;
-            } // if
-        } // for
-        return false;
-    } // isLegal()
-
-    /**
-     * Create a random (legal) nextMove
-     * 
-     * @return a Board of a random move, or null if there are no legal moves.
-     */
-    public Board ranMove() {
-        Board move;
-        ArrayList<Integer> onSquares = new ArrayList<>();
-        Random rand = new Random();
-        for (int square = 0; square < 64; square++) {
-            byte piece = getSquare(square);
-            if (piece != PieceTypes.EMPTY && isColor(piece, this.turnColor)) {
-                onSquares.add(square);
-            } // if
-        } // for
-
-        while (!onSquares.isEmpty()) {
-            int selection = rand.nextInt(onSquares.size());
-            int square = onSquares.get(selection);
-            byte piece = getSquare(square);
-            Board[] pieceMoves = generatePieceMoves(piece, square);
-            ArrayList<Board> legalMoves = new ArrayList<>();
-            for (Board pieceMove : pieceMoves) {
-                if (!pieceMove.inCheck(this.turnColor)) {
-                    legalMoves.add(pieceMove);
-                } // if
-            } // for
-
-            if (legalMoves.isEmpty()) {
-                onSquares.remove(selection);
-            } else {
-                move = legalMoves.get(rand.nextInt(legalMoves.size()));
-                move.turnColor = oppColor();
-                return move;
-            }
-            updateLegalMoves(legalMoves);
-        }
-        return null;
-    }
 
     /**
      * Creates a random weighted move from all possible next moves. More likely to
@@ -669,8 +425,8 @@ public class Board {
              */
             for (Board pieceMove : pieceMoves) {
                 pieceMove.turnColor = this.oppColor();
-                if (!pieceMove.inCheck(this.turnColor)) {
-                    if (pieceMove.inCheck(this.oppColor())) {
+                if (!PieceMoves.inCheck(pieceMove, this.turnColor)) {
+                    if (PieceMoves.inCheck(pieceMove, this.oppColor())) {
                         pieceMove.moveWeight += 5;
                     } // if
                     nextPositions[numPossibleMoves] = pieceMove;
