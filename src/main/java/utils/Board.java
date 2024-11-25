@@ -47,6 +47,8 @@ public class Board {
      */
     public int pieceCount;
 
+    public boolean canCastle;
+
     /**
      * Builds a new board representing the games current state.
      *
@@ -57,8 +59,9 @@ public class Board {
         this.turnColor = turnCol;
         this.engineColor = engineCol;
         this.hasLegalMoves = true;
-        this.moveWeight = 1;
+        this.moveWeight = 2;
         this.pieceCount = 0;
+        this.canCastle = true;
     } // Board()
 
     /**
@@ -427,7 +430,7 @@ public class Board {
                 pieceMove.turnColor = this.oppColor();
                 if (!PieceMoves.inCheck(pieceMove, this.turnColor)) {
                     if (PieceMoves.inCheck(pieceMove, this.oppColor())) {
-                        pieceMove.moveWeight += 5;
+                        pieceMove.moveWeight += 10;
                     } // if
                     nextPositions[numPossibleMoves] = pieceMove;
                     numPossibleMoves++;
@@ -487,6 +490,7 @@ public class Board {
      */
     public Board copyBoard() {
         Board returnState = new Board(this.turnColor, this.engineColor);
+        returnState.canCastle = this.canCastle;
         for (int i = 0; i < this.board.length; i++) {
             System.arraycopy(this.board[i], 0, returnState.board[i], 0, this.board[0].length);
         } // for

@@ -19,6 +19,10 @@ public class MCNode {
      * The total wins/draws of the node
      */
     public double wins;
+
+    public double AMAFwins;
+
+    public int AMAFplayOuts;
     /**
      * The number of times this was attempted
      */
@@ -36,7 +40,9 @@ public class MCNode {
     public MCNode (Board curState, MCNode parentNode) {
         this.currentState = curState;
         this.wins = 0.0;
+        this.AMAFwins = 0.0;
         this.playOuts = 0;
+        this.AMAFplayOuts = 0;
         this.lastMove = parentNode;
         this.nextMoves = new ArrayList<>();
     } //MCNode(Board, MCNode)

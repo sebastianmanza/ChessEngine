@@ -17,8 +17,8 @@
 
     <!-- Properties for compiling Java -->
     <properties>
-        <maven.compiler.source>17</maven.compiler.source>  <!-- Set to the Java version you're using -->
-        <maven.compiler.target>17</maven.compiler.target>  <!-- Set to the Java version you're using -->
+        <maven.compiler.source>21</maven.compiler.source>  <!-- Set to the Java version you're using -->
+        <maven.compiler.target>21</maven.compiler.target>  <!-- Set to the Java version you're using -->
     </properties>
 
     <!-- Dependencies for your project -->
@@ -29,6 +29,12 @@
             <artifactId>junit</artifactId>
             <version>4.13.2</version>
             <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>32.1.2-jre</version> <!-- Use the latest version -->
         </dependency>
         
         <!-- Add other dependencies as needed -->
@@ -51,7 +57,7 @@
                 </executions>
                 <configuration>
                     <!-- Set the main class of your program -->
-                    <mainClass>chessEngine.badBot</mainClass>
+                    <mainClass>chessEngine.midBot</mainClass>
                 </configuration>
             </plugin>
 
@@ -62,7 +68,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>chessEngine.badBot</mainClass>
+                            <mainClass>chessEngine.midBot</mainClass>
                         </manifest>
                     </archive>
                 </configuration>

@@ -1,9 +1,12 @@
-chessEngine/randoBot.class
+utils/MCTUtils/SimResult.class
 utils/PieceTypes.class
+utils/MCTUtils/MCTRAVE.class
 utils/UIutils.class
 chessEngine/mainTester.class
-utils/MCTUtils/MCNode.class
 utils/Board.class
-chessEngine/badBot.class
-utils/MCTUtils/MCT.class
 utils/PieceMoves.class
+chessEngine/randoBot.class
+chessEngine/badBot.class
+utils/MCTUtils/MCNode.class
+chessEngine/midBot.class
+utils/MCTUtils/MCT.class

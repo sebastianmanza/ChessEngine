@@ -7,6 +7,20 @@ import java.util.List;
 public class PieceMoves {
 
     /**
+     * An array representing the centersquares of the board.
+     */
+    public static final int[] CENTER_SQUARES = {35, 36, 43, 44};
+
+
+    public static int controlsCenter(int square) {
+        for (int i = 0; i < CENTER_SQUARES.length; i++) {
+            if (square == CENTER_SQUARES[i]) {
+                return 3;
+            }
+        }
+        return 1;
+    }
+    /**
      * Promote a pawn.
      * 
      * @param startingSquare The square the pawn starts on
@@ -27,15 +41,15 @@ public class PieceMoves {
             newBoard.setSquare(endingSquare, PieceTypes.BLACK_KNIGHT);
             newBoard.setSquare(startingSquare, PieceTypes.EMPTY);
             promotionMoves[0] = newBoard;
-    
+
             newBoardTwo.setSquare(endingSquare, PieceTypes.BLACK_BISHOP);
             newBoardTwo.setSquare(startingSquare, PieceTypes.EMPTY);
             promotionMoves[1] = newBoardTwo;
-    
+
             newBoardThree.setSquare(endingSquare, PieceTypes.BLACK_ROOK);
             newBoardThree.setSquare(startingSquare, PieceTypes.EMPTY);
             promotionMoves[2] = newBoardThree;
-    
+
             newBoardFour.setSquare(endingSquare, PieceTypes.BLACK_QUEEN);
             newBoardFour.setSquare(startingSquare, PieceTypes.EMPTY);
             promotionMoves[3] = newBoardFour;
@@ -43,15 +57,15 @@ public class PieceMoves {
             newBoard.setSquare(endingSquare, PieceTypes.WHITE_KNIGHT);
             newBoard.setSquare(startingSquare, PieceTypes.EMPTY);
             promotionMoves[0] = newBoard;
-    
+
             newBoardTwo.setSquare(endingSquare, PieceTypes.WHITE_BISHOP);
             newBoardTwo.setSquare(startingSquare, PieceTypes.EMPTY);
             promotionMoves[1] = newBoardTwo;
-    
+
             newBoardThree.setSquare(endingSquare, PieceTypes.WHITE_ROOK);
             newBoardThree.setSquare(startingSquare, PieceTypes.EMPTY);
             promotionMoves[2] = newBoardThree;
-    
+
             newBoardFour.setSquare(endingSquare, PieceTypes.WHITE_QUEEN);
             newBoardFour.setSquare(startingSquare, PieceTypes.EMPTY);
             promotionMoves[3] = newBoardFour;
@@ -71,8 +85,8 @@ public class PieceMoves {
      */
     public static void addMoveWeight(byte capturedPiece, Board boardState, int pieceTypeWeight) {
         switch (capturedPiece) {
-            case PieceTypes.WHITE_PAWN -> boardState.moveWeight += 2;
-            case PieceTypes.BLACK_PAWN -> boardState.moveWeight += 2;
+            case PieceTypes.WHITE_PAWN -> boardState.moveWeight += 1;
+            case PieceTypes.BLACK_PAWN -> boardState.moveWeight += 1;
             case PieceTypes.WHITE_KNIGHT -> boardState.moveWeight += 6;
             case PieceTypes.BLACK_KNIGHT -> boardState.moveWeight += 6;
             case PieceTypes.WHITE_BISHOP -> boardState.moveWeight += 7;
@@ -128,6 +142,7 @@ public class PieceMoves {
 
         /* Assign some rows and directions based on color: */
         int direction = (color == PieceTypes.WHITE) ? 1 : -1;
+        int[] captures = { direction + 8, direction - 8 };
         int startingRow = (color == PieceTypes.WHITE) ? 1 : 6;
         int promotionRow = (color == PieceTypes.WHITE) ? 6 : 1;
 
@@ -151,19 +166,25 @@ public class PieceMoves {
                 } // for
             } else {
                 pawnMoves[numMoves] = movePiece(square, forward, currentState);
+                for (int cap : captures) {
+                    pawnMoves[numMoves].moveWeight *= controlsCenter(forward + cap);
+                } //for
                 numMoves++;
+                
             } // if/else
 
             /* It can also move 2 squares forward if it's on its starting square. */
             if (onStartingSquare && (currentState.getSquare(forward) == PieceTypes.EMPTY)
                     && currentState.getSquare(square + (2 * direction)) == PieceTypes.EMPTY) {
                 pawnMoves[numMoves] = movePiece(square, (square + (2 * direction)), currentState);
+                for (int cap : captures) {
+                    pawnMoves[numMoves].moveWeight *= controlsCenter(forward + cap);
+                } //for
                 numMoves++;
             } // if
         } // if
 
         /* Captures (the diagonal directions) */
-        int[] captures = { direction + 8, direction - 8 };
         for (int cap : captures) {
             int capture = square + cap; // the capture square
 
@@ -184,6 +205,9 @@ public class PieceMoves {
                 } else {
                     pawnMoves[numMoves] = movePiece(square, capture, currentState);
                     addMoveWeight(piece, pawnMoves[numMoves], 3);
+                    for (int capcap : captures) {
+                        pawnMoves[numMoves].moveWeight *= controlsCenter(forward + capcap);
+                    } //for
                     numMoves++;
                 } // if/else
             } // if
@@ -224,6 +248,9 @@ public class PieceMoves {
                 /* If it is a capture, weight its move a little. */
                 if (Board.pieceColor(endingPiece) != color && endingPiece != PieceTypes.EMPTY) {
                     addMoveWeight(endingPiece, knightMoves[numMoves], 2);
+                }
+                for (int center : LMoves) {
+                    knightMoves[numMoves].moveWeight *= controlsCenter(endingSquare + center);
                 }
                 numMoves++;
             } // if
@@ -281,6 +308,13 @@ public class PieceMoves {
                     } // if
 
                     slideMoves.add(movePiece(square, endingSquare, currentState));
+                    /*
+                     * If the piece was starting on h1, it can no longer castle (either there was a
+                     * piece not a rook on h1, or the rook moved)
+                     */
+                    if ((color == PieceTypes.WHITE && square == 56) || (color == PieceTypes.BLACK && square == 63)) {
+                        slideMoves.get(slideMoves.size() - 1).canCastle = false;
+                    } // if
 
                     /* If it was an opponents piece, it can't go any further */
                     if ((Board.pieceColor(pieceOnSquare) != color) && (pieceOnSquare != PieceTypes.EMPTY)) {
@@ -340,7 +374,7 @@ public class PieceMoves {
     } // slideMoves
 
     public static Board[] kingMoves(int square, byte color, Board currentState) {
-        Board[] kingMoves = new Board[8];
+        Board[] kingMoves = new Board[9];
         int numMoves = 0;
         int row = square % 8;
         int col = square / 8;
@@ -366,6 +400,8 @@ public class PieceMoves {
                     && (Math.abs(endingCol - col) <= 1)
                     && ((piece == PieceTypes.EMPTY) || (Board.pieceColor(piece) != color))) {
                 kingMoves[numMoves] = movePiece(square, endingSquare, currentState);
+                kingMoves[numMoves].moveWeight -= 1;
+                kingMoves[numMoves].canCastle = false;
 
                 if (Board.pieceColor(piece) != color) {
                     Board.addPieceValue(piece, kingMoves[numMoves].moveWeight);
@@ -373,36 +409,66 @@ public class PieceMoves {
                 numMoves++;
             } // if
         } // for
+
+        /*
+         * Castling (check if it can castle, the squares are empty, its not in check or
+         * going through check
+         */
+        if (currentState.canCastle
+                && color == PieceTypes.WHITE
+                && currentState.getSquare(40) == PieceTypes.EMPTY
+                && currentState.getSquare(48) == PieceTypes.EMPTY
+                && !PieceMoves.inCheck(currentState, color)
+                && !PieceMoves.inCheck(movePiece(square, 40, currentState), color)
+                && !PieceMoves.inCheck(movePiece(square, 48, currentState), color)) {
+            Board castle = movePiece(square, 48, currentState);
+            movePiece(56, 40, castle);
+            castle.moveWeight *= 4;
+            castle.canCastle = false;
+            kingMoves[numMoves++] = castle;
+        } else if (currentState.canCastle
+                && color == PieceTypes.BLACK
+                && currentState.getSquare(47) == PieceTypes.EMPTY
+                && currentState.getSquare(55) == PieceTypes.EMPTY
+                && !PieceMoves.inCheck(currentState, color)
+                && !PieceMoves.inCheck(movePiece(square, 47, currentState), color)
+                && !PieceMoves.inCheck(movePiece(square, 55, currentState), color)) {
+            Board castle = movePiece(square, 55, currentState);
+            movePiece(63, 47, castle);
+            castle.moveWeight *= 4;
+            castle.canCastle = false;
+            kingMoves[numMoves++] = castle;
+            
+        }
         return Arrays.copyOfRange(kingMoves, 0, numMoves);
+
     } // kingMoves
 
     public static boolean inCheck(Board boardToCheck, byte kingColor) {
         /* The king we want to see if is in check. */
         byte piece = (kingColor == PieceTypes.WHITE) ? PieceTypes.WHITE_KING : PieceTypes.BLACK_KING;
-        
+
         int kingSquare = -1;
 
-        for (int i = 0; i < 64; i++) {      
+        for (int i = 0; i < 64; i++) {
             /* Find the king's square */
             if (boardToCheck.getSquare(i) == piece) {
                 kingSquare = i;
                 break;
-            } //if
-        } //for
+            } // if
+        } // for
 
         if (kingSquare == -1) {
             return true;
-        } //if
+        } // if
 
-        int row = kingSquare % 8;
-        int col = kingSquare / 8;
-
-        return (inCheckFromPawns(kingSquare, piece, boardToCheck) || inCheckFromKnights(kingSquare, piece, boardToCheck) 
-        || inCheckFromSlidePiece(kingSquare, piece, boardToCheck) || inCheckfromKings(kingSquare, piece, boardToCheck));
+        return (inCheckFromPawns(kingSquare, piece, boardToCheck) || inCheckFromKnights(kingSquare, piece, boardToCheck)
+                || inCheckFromSlidePiece(kingSquare, piece, boardToCheck)
+                || inCheckfromKings(kingSquare, piece, boardToCheck));
     }
 
     public static boolean inCheckFromPawns(int kingSquare, byte king, Board board) {
-        int[] pawnChecks = (Board.pieceColor(king) == PieceTypes.WHITE) ? new int[] {-9, 7} : new int[] {-7, 9};
+        int[] pawnChecks = (Board.pieceColor(king) == PieceTypes.WHITE) ? new int[] { -9, 7 } : new int[] { -7, 9 };
 
         byte oppPawn = (Board.pieceColor(king) == PieceTypes.WHITE) ? PieceTypes.BLACK_PAWN : PieceTypes.WHITE_PAWN;
         for (int move : pawnChecks) {
@@ -411,13 +477,13 @@ public class PieceMoves {
             /* If it is out of bounds its not possible */
             if (checkSquare > 63 || checkSquare < 0) {
                 continue;
-            } //if
+            } // if
 
             /* If the square you move to is an opposite pawn, youre in check. */
             if (board.getSquare(checkSquare) == oppPawn) {
                 return true;
-            } //if
-        } //for
+            } // if
+        } // for
         return false;
     }
 
@@ -426,52 +492,54 @@ public class PieceMoves {
         int row = kingSquare % 8;
         int col = kingSquare / 8;
 
-        byte oppKnight = (Board.pieceColor(king) == PieceTypes.WHITE) ? PieceTypes.BLACK_KNIGHT : PieceTypes.WHITE_KNIGHT;
+        byte oppKnight = (Board.pieceColor(king) == PieceTypes.WHITE) ? PieceTypes.BLACK_KNIGHT
+                : PieceTypes.WHITE_KNIGHT;
         for (int move : knightChecks) {
             int checkSquare = kingSquare + move;
             int checkRow = checkSquare % 8;
             int checkCol = checkSquare / 8;
-            
+
             /* If it is out of bounds its not possible */
             if (checkSquare > 63 || checkSquare < 0) {
                 continue;
-            } //if
+            } // if
 
             byte checkPiece = board.getSquare(checkSquare);
 
             if ((Math.abs(checkRow - row) > 2) || (Math.abs(checkCol - col)) > 2) {
                 continue;
-            } //if
+            } // if
 
             if (checkPiece == oppKnight)
                 return true;
-        } //for
+        } // for
         return false;
-    } //inCheckFromKnights(int, byte, Board
-    
+    } // inCheckFromKnights(int, byte, Board
+
     public static boolean inCheckFromSlidePiece(int kingSquare, byte king, Board board) {
         int[] horizChecks = { -8, -1, 1, 8 };
         int[] diagChecks = { -9, -7, 7, 9 };
         int row = kingSquare % 8;
         int col = kingSquare / 8;
 
-        byte oppBishop = (Board.pieceColor(king) == PieceTypes.WHITE) ? PieceTypes.BLACK_BISHOP : PieceTypes.WHITE_BISHOP;
+        byte oppBishop = (Board.pieceColor(king) == PieceTypes.WHITE) ? PieceTypes.BLACK_BISHOP
+                : PieceTypes.WHITE_BISHOP;
         byte oppRook = (Board.pieceColor(king) == PieceTypes.WHITE) ? PieceTypes.BLACK_ROOK : PieceTypes.WHITE_ROOK;
         byte oppQueen = (Board.pieceColor(king) == PieceTypes.WHITE) ? PieceTypes.BLACK_QUEEN : PieceTypes.WHITE_QUEEN;
 
         int checkSquare = kingSquare;
         /* Check for bishops and queens */
-        for (int move: diagChecks) {
+        for (int move : diagChecks) {
             /* Move in the diagonal direction */
-            while (true) { 
+            while (true) {
                 checkSquare += move;
                 int checkRow = checkSquare % 8;
                 int checkCol = checkSquare / 8;
 
-                /*Col and row must be the same */
+                /* Col and row must be the same */
                 if (Math.abs(checkRow - row) != Math.abs(checkCol - col)) {
                     break;
-                } //if
+                } // if
 
                 if (checkSquare > 63 || checkSquare < 0) {
                     break;
@@ -484,31 +552,31 @@ public class PieceMoves {
                     continue;
                 }
 
-                /* If it is a piece of the same color, break the loop*/
+                /* If it is a piece of the same color, break the loop */
                 if (Board.pieceColor(checkPiece) == board.turnColor) {
                     break;
-                } //if
+                } // if
 
                 /* If it is an opposite bishop or queen, youre in check */
                 if (checkPiece == oppQueen || checkPiece == oppBishop) {
                     return true;
                 } else {
                     break;
-                } //if/else
-            } //while(true)
-        } //for
+                } // if/else
+            } // while(true)
+        } // for
 
-        for (int move: horizChecks) {
+        for (int move : horizChecks) {
             /* Move in the horizontal direction */
             while (true) {
                 checkSquare += move;
                 int checkRow = checkSquare % 8;
                 int checkCol = checkSquare / 8;
 
-                /*Col must be the same and row must be the same */
+                /* Col must be the same and row must be the same */
                 if (checkCol != col && checkRow != row) {
                     break;
-                } //if
+                } // if
 
                 if (checkSquare > 63 || checkSquare < 0) {
                     break;
@@ -528,15 +596,15 @@ public class PieceMoves {
                     return true;
                 } else {
                     break;
-                } //if/else
-            } //while(true)
-        } //for
+                } // if/else
+            } // while(true)
+        } // for
         /* If nothing has been found, its not in check from a slide piece */
         return false;
-    } //inCheckFromSlidePiece(int, byte, board)
+    } // inCheckFromSlidePiece(int, byte, board)
 
     public static boolean inCheckfromKings(int kingSquare, byte king, Board board) {
-        int[] kingChecks = { -9, -8, -7, -1, 1, 7, 8, 9};
+        int[] kingChecks = { -9, -8, -7, -1, 1, 7, 8, 9 };
         int row = kingSquare % 8;
         int col = kingSquare / 8;
 
@@ -546,7 +614,6 @@ public class PieceMoves {
             int checkSquare = kingSquare + move;
             int checkRow = checkSquare % 8;
             int checkCol = checkSquare / 8;
-
 
             /* Check if its in bounds */
             if (checkSquare < 0 || checkSquare > 63) {

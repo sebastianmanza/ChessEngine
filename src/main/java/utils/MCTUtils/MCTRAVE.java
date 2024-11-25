@@ -1,3 +1,4 @@
+
 package utils.MCTUtils;
 
 import java.io.PrintWriter;
@@ -6,6 +7,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ForkJoinPool;
@@ -20,7 +22,7 @@ import utils.Board;
  * 
  * @author Sebastian Manza
  */
-public class MCT {
+public class MCTRAVE {
     /** The exploration parameter, used to balance exploration vs exploitation */
     public static final double EXPLORATION_PARAM = 1;
 
@@ -32,7 +34,7 @@ public class MCT {
      * 
      * @param currentMove The most recent move made.
      */
-    public MCT(Board currentMove) {
+    public MCTRAVE(Board currentMove) {
         this.root = new MCNode(currentMove, null);
     }
 
@@ -64,7 +66,7 @@ public class MCT {
                 MCNode expandedNode = expand(selectedNode);
 
                 /* Runs parallel simulations for the expanded node */
-                List<Callable<Double>> tasks = new ArrayList<>();
+                List<Callable<SimResult>> tasks = new ArrayList<>();
 
                 int numSimulations = Runtime.getRuntime().availableProcessors();
 
@@ -73,10 +75,10 @@ public class MCT {
                     iterations.incrementAndGet();
                 } // for
 
-                List<Future<Double>> results = pool.invokeAll(tasks);
-                for (Future<Double> result : results) {
-                    double winPoints = result.get();
-                    backPropagate(expandedNode, winPoints, root);
+                List<Future<SimResult>> results = pool.invokeAll(tasks);
+                for (Future<SimResult> result : results) {
+                    SimResult gameSim = result.get();
+                    backPropagate(expandedNode, gameSim.winPoints, root, gameSim.gameSim);
                 } // for
             } // while
             /* Find the best move based on the node that was played the most */
@@ -95,12 +97,13 @@ public class MCT {
     } // search(Duration)
 
     /**
-     * Calculates a value for a node to select using UCB1
+     * Calculates a value for a node to select using a comination of 
+     * UCB (Upper Confidence Bound) and AMAF (all-moves-as-first) methods
      * 
      * @param node The node to calculate
      * @return The value of the node
      */
-    public static double UCT(MCNode node) {
+    public static double RAVE(MCNode node) {
         /* Make sure the last moves playouts isn't null */
         double lastMovePlayouts = node.lastMove != null ? node.lastMove.playOuts : 1;
 
@@ -112,7 +115,16 @@ public class MCT {
         /* Calculate the Upper Confidence Bound */
         double UCB1 = (node.wins / node.playOuts
         + (EXPLORATION_PARAM * Math.sqrt((Math.log(lastMovePlayouts)) / node.playOuts)));
-        return UCB1;
+
+        /* Calculate the AMAF value */
+        double AMAF = (node.AMAFplayOuts > 0) ? (node.AMAFwins / node.AMAFplayOuts) : 0;
+
+        /* Calculate the beta value */
+        double beta = node.AMAFplayOuts / (node.playOuts + node.AMAFplayOuts + 0.001);
+
+        /* Use the RAVE formula to incorporate both. */
+        double RAVEresult = (1 - beta) * UCB1 + beta * AMAF;
+        return RAVEresult;
     } // UCT(node)
 
     /**
@@ -133,7 +145,7 @@ public class MCT {
              * node with the highest UCT
              */
             Collections.shuffle(node.nextMoves);
-            node = Collections.max(node.nextMoves, Comparator.comparingDouble(MCT::UCT));
+            node = Collections.max(node.nextMoves, Comparator.comparingDouble(MCTRAVE::RAVE));
         } // while
         return node;
     } // select(MCNode)
@@ -183,9 +195,10 @@ public class MCT {
      * @return the number of win-points
      */
 
-    public static double simulate(MCNode node) throws Exception {
+    public static SimResult simulate(MCNode node) throws Exception {
         Board gameState = node.currentState;
         int depth = 0;
+        HashSet<Board> gameSim = new HashSet<>();
         // PrintWriter pen = new PrintWriter(System.out, true);
 
         /* Run the loop while the game is undecided */
@@ -196,10 +209,11 @@ public class MCT {
                 // int material = gameState.material();
                 // vicPoints = vicPoints + 0.1 * Math.signum(material) * Math.min(Math.abs(material), 10);
                 // return Math.max(0, Math.min(1, vicPoints));
-                return vicPoints;
+                return new SimResult(gameSim, vicPoints);
             } // if
 
             gameState = nextGameState;
+            gameSim.add(gameState);
             int material = gameState.material();
 
             /*
@@ -209,20 +223,20 @@ public class MCT {
              */
             if (depth >= 10) {
                 if (gameState.turnColor != gameState.engineColor && material < -9) {
-                    return 0.15;
+                    return new SimResult(gameSim, 0.15);
                 } else if (gameState.turnColor == gameState.engineColor && material > 9) {
-                    return 0.85;
+                    return new SimResult(gameSim, 0.85);
                 } // if
             }
 
             /* If it's searched far in, assume a weighted draw. */
             if (depth++ >= 200) {
                 if (material > 3) {
-                    return 0.6;
+                    return new SimResult(gameSim, 0.6);
                 } else if (material < -3) {
-                    return 0.4;
+                    return new SimResult(gameSim, 0.4);
                 } else
-                    return 0.5;
+                    return new SimResult(gameSim, 0.5);
             } // if
               // gameState.printBoard(pen);
               // pen.println("Material" + gameState.material());
@@ -239,7 +253,7 @@ public class MCT {
      * @param winPoints The number of points to be given.
      * @param root      The root of the MCT
      */
-    public static synchronized void backPropagate(MCNode node, double winPoints, MCNode root) {
+    public static synchronized void backPropagate(MCNode node, double winPoints, MCNode root, HashSet<Board> gameSim) {
         MCNode curNode = node;
         while (curNode != null) {
             curNode.playOuts++;
@@ -250,5 +264,19 @@ public class MCT {
             } // if/else
             curNode = curNode.lastMove;
         } // while
+
+        /* For AMAF */
+        for (MCNode nextMove : root.nextMoves) {
+            if (gameSim.contains(nextMove.currentState)) {
+                nextMove.AMAFplayOuts++;
+            if (nextMove.currentState.turnColor != nextMove.currentState.engineColor) {
+                nextMove.AMAFwins += winPoints;
+            } else {
+                nextMove.AMAFwins += (1 - winPoints);
+            } // if/else
+            }
+        }
+
     } // backPropogate(MCNode, double, MCNode)
-} // MCT
+} // MCTRAVE
+
