@@ -191,7 +191,16 @@ public class PieceMoves {
             /* Don't check the square if its not valid. */
             if ((capture > 63) || (capture < 0)) {
                 continue;
+<<<<<<< HEAD
             } // if
+=======
+            } //if
+
+            if (Math.abs(capture - square) > 1){
+                continue;
+            } //if
+
+>>>>>>> 811db2d66acb3f1e6ab6b850eb167e87c2174ea9
             byte piece = currentState.getSquare(capture);
             /* Check if there is an opponents piece on the capture square. */
             if ((piece != PieceTypes.EMPTY) && (Board.pieceColor(piece) != color)) {
