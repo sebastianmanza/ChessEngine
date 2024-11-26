@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import utils.Board;
+import utils.Move;
 
 public class MCNode {
 
@@ -11,6 +12,8 @@ public class MCNode {
      * The current move/game state
      */
     public Board currentState;
+
+    public Move move;
     /**
      * The list of all possible nextMoves
      */

@@ -49,6 +49,10 @@ public class Board {
 
     public boolean canCastle;
 
+    public int whiteKingSquare;
+
+    public int blackKingSquare;
+
     /**
      * Builds a new board representing the games current state.
      *
@@ -62,7 +66,9 @@ public class Board {
         this.moveWeight = 2;
         this.pieceCount = 0;
         this.canCastle = true;
-    } // Board()
+        this.whiteKingSquare = 32;
+        this.blackKingSquare = 39;
+        } // Board()
 
     /**
      * Sets a square on the board to a piece.
@@ -72,18 +78,16 @@ public class Board {
      */
     public void setSquare(int square, byte piece) {
         /* Interpret the row and column based off of the square */
-        int col = square / 8;
-        int row = (square % 8) / 2;
-        /* Create a boolean checking which nibble the square is in. */
-        boolean highNibble = (square % 2 == 0);
+        int col = square >> 3;
+        int row = (square & 7) >> 1;
 
         /*
          * Clears the half of the byte that the piece will be stored on, and shifts the
          * piece
          * appropriately
          */
-        if (highNibble) {
-            this.board[col][row] = (byte) ((this.board[col][row] & 0x0f) | ((piece & 0x0F) << 4));
+        if ((square & 1) == 0) {
+            this.board[col][row] = (byte) ((this.board[col][row] & 0x0f) | piece << 4);
         } else {
             this.board[col][row] = (byte) ((this.board[col][row] & 0xF0) | piece & 0x0f);
         } // if/else
@@ -97,13 +101,11 @@ public class Board {
      */
     public byte getSquare(int square) {
         /* Interpret the row and column based off of the square */
-        int col = square / 8;
-        int row = (square % 8) / 2;
-        /* Create a boolean checking which nibble the square is in. */
-        boolean highNibble = (square % 2 == 0);
+        int col = square >> 3;
+        int row = (square & 7) >> 1;
 
         /* Builds the piece by returning the proper half of the byte */
-        if (highNibble) {
+        if ((square & 1) == 0) {
             return (byte) ((this.board[col][row] & 0xF0) >>> 4);
         } else {
             return (byte) (this.board[col][row] & 0x0F);
@@ -246,6 +248,10 @@ public class Board {
         return (!hasLegalMoves);
     } // isGameOver
 
+    public boolean inCheck(byte color) {
+        return PieceMoves.inCheck(this, color);
+    } //inCheck(byte color)
+
     /**
      * Adds the value of a piece to a value.
      * 
@@ -315,13 +321,13 @@ public class Board {
      *         or draw
      */
     public double vicPoints() {
-        if (PieceMoves.inCheck(this, PieceTypes.WHITE) && engineColor == PieceTypes.WHITE) {
+        if (inCheck(PieceTypes.WHITE) && engineColor == PieceTypes.WHITE) {
             return 0.0;
-        } else if (PieceMoves.inCheck(this, PieceTypes.BLACK) && engineColor == PieceTypes.BLACK) {
+        } else if (inCheck(PieceTypes.BLACK) && engineColor == PieceTypes.BLACK) {
             return 0.0;
-        } else if (PieceMoves.inCheck(this, PieceTypes.WHITE) && engineColor == PieceTypes.BLACK) {
+        } else if (inCheck(PieceTypes.WHITE) && engineColor == PieceTypes.BLACK) {
             return 1.0;
-        } else if (PieceMoves.inCheck(this, PieceTypes.BLACK) && engineColor == PieceTypes.WHITE) {
+        } else if (inCheck(PieceTypes.BLACK) && engineColor == PieceTypes.WHITE) {
             return 1.0;
         } // if/else
         return 0.5;
@@ -362,34 +368,64 @@ public class Board {
      * @param rand A random object.
      * @return A board representing the move
      */
-    public Board ranWeightedMove(Random rand) throws Exception {
-        Board[] nextMoves = this.nextMoves();
-        int totalWeight = 0;
+    public Move ranWeightedMove(Random rand) throws Exception {
+        int[] moveSquares = new int[128];
+        int mvsqr = 0;
+
         PrintWriter pen = new PrintWriter(System.out, true);
 
-        /* If there aren't any legal moves, return null */
-        if (nextMoves.length == 0) {
+        for (int square = 0; square < 64; square++) {
+            byte piece = this.getSquare(square);
+
+            /* Ignore it if its not our piece */
+            if (piece == PieceTypes.EMPTY || !isColor(piece, this.turnColor)) {
+                continue;
+            }
+
+            Move[] pieceMoves = generatePieceMoves(piece, square);
+            if (pieceMoves.length != 0) {
+                for (Move move : pieceMoves) {
+                    for (int i = 0; i < move.moveWeight; i++) {
+                        if (mvsqr > (moveSquares.length / 2)) {
+                            moveSquares = Arrays.copyOf(moveSquares, moveSquares.length*2);
+                        }
+                        moveSquares[mvsqr++] = square;
+                    }
+                 }
+            }
+        }
+
+        if (mvsqr == 0) {
             return null;
-        } // if
+        }
 
-        for (Board move : nextMoves) {
-            totalWeight += move.moveWeight;
-        } // for
+        int random = rand.nextInt(mvsqr);
+        int square = moveSquares[random];
 
-        int random = rand.nextInt(totalWeight);
+        byte piecetoMove = getSquare(square);
+        Move[] options = generatePieceMoves(piecetoMove, square);
 
-        totalWeight = 0;
-        /* Return the first move greater than the random number. */
-        for (Board move : nextMoves) {
-            totalWeight += move.moveWeight;
-            if (totalWeight >= random) {
-                move.turnColor = this.oppColor();
-                // move.printBoard(pen);
-                // pen.println(move.moveWeight);
-                return move;
-            } // if
-        } // for
-        return null;
+        Move playMove = null;
+        Move bestMove = options[0];
+        for (Move move : options) {
+            if (move.moveWeight > bestMove.moveWeight) {
+                Board bestBoard = PieceMoves.movePiece(move, this);
+                if (!bestBoard.inCheck(this.turnColor)) {
+                    playMove = move;
+                    bestMove = move;
+                } //if
+            } //if
+        } //for
+
+        if (playMove == null) {
+            Move[] nextMoves = this.nextMoves();
+            if (nextMoves.length == 0) {
+                return null;
+            } //if
+            random = rand.nextInt(nextMoves.length);
+            return nextMoves[random];
+        }
+        return playMove;
     } // ranWeightedMove(Random)
 
     /**
@@ -397,13 +433,13 @@ public class Board {
      *
      * @return All possible next moves.
      */
-    public Board[] nextMoves() {
+    public Move[] nextMoves() {
         /*
          * Create an array to store all possible next moves, and an integer to store the
          * current
          * number of moves in the array.
          */
-        Board[] nextPositions = new Board[50];
+        Move[] nextPositions = new Move[50];
         int numPossibleMoves = 0;
         /* Loop through the board to check all the pieces */
         for (int square = 0; square < 64; square++) {
@@ -416,7 +452,7 @@ public class Board {
                 continue;
             } // if
             /* Create a new array for all the possible moves of that piece */
-            Board[] pieceMoves = this.generatePieceMoves(piece, square);
+            Move[] pieceMoves = this.generatePieceMoves(piece, square);
             /* Skip if no moves are generated */
             if (pieceMoves == null || pieceMoves.length == 0) {
                 continue;
@@ -426,22 +462,18 @@ public class Board {
              * list of
              * nextPositions
              */
-            for (Board pieceMove : pieceMoves) {
-                pieceMove.turnColor = this.oppColor();
-                if (!PieceMoves.inCheck(pieceMove, this.turnColor)) {
-                    if (PieceMoves.inCheck(pieceMove, this.oppColor())) {
-                        pieceMove.moveWeight += 10;
-                    } // if
+            for (Move pieceMove : pieceMoves) {
+                Board newBoard = PieceMoves.movePiece(pieceMove, this);
+                if (!newBoard.inCheck(this.turnColor)) {
                     nextPositions[numPossibleMoves] = pieceMove;
                     numPossibleMoves++;
                     if (numPossibleMoves >= nextPositions.length) {
                         /* Expand the array if it's full. */
                         nextPositions = Arrays.copyOf(nextPositions, numPossibleMoves * 2);
                     } // if
-                } // if
+                }
             } // for
         } // for
-
         /* Update if there are legal moves left. */
         updateLegalMoves(numPossibleMoves);
         /* Return only the legal game states in a correctly sized array */
@@ -455,9 +487,9 @@ public class Board {
      * @param square The square the piece is located on
      * @return An array of all possible moves for the piece.
      */
-    public Board[] generatePieceMoves(byte piece, int square) {
+    public Move[] generatePieceMoves(byte piece, int square) {
         /* Create a new array that will return the types. */
-        Board[] pieceMoves;
+        Move[] pieceMoves;
         byte color = pieceColor(piece);
 
         /*
@@ -467,7 +499,8 @@ public class Board {
          * be looked at
          */
         switch (piece) {
-            case PieceTypes.WHITE_PAWN, PieceTypes.BLACK_PAWN -> pieceMoves = PieceMoves.pawnMoves(square, color, this);
+            case PieceTypes.WHITE_PAWN, PieceTypes.BLACK_PAWN -> 
+                pieceMoves = PieceMoves.pawnMoves(square, color, this);
             case PieceTypes.WHITE_KNIGHT, PieceTypes.BLACK_KNIGHT ->
                 pieceMoves = PieceMoves.knightMoves(square, color, this);
             case PieceTypes.WHITE_BISHOP, PieceTypes.BLACK_BISHOP ->
@@ -491,10 +524,12 @@ public class Board {
     public Board copyBoard() {
         Board returnState = new Board(this.turnColor, this.engineColor);
         returnState.canCastle = this.canCastle;
+        returnState.whiteKingSquare = this.whiteKingSquare;
+        returnState.blackKingSquare = this.blackKingSquare;
         for (int i = 0; i < this.board.length; i++) {
             System.arraycopy(this.board[i], 0, returnState.board[i], 0, this.board[0].length);
         } // for
         return returnState;
     } // copyBoard()
 
-} // CurrentBoard
+} //Board

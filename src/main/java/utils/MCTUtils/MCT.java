@@ -14,6 +14,8 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import utils.Board;
+import utils.Move;
+import utils.PieceMoves;
 
 /**
  * A class that constructs and runs a Monte Carlo Tree Search.
@@ -148,9 +150,12 @@ public class MCT {
         int totalWeight = 0;
 
         /* Add all possible children to the node */
-        Board[] gameStates = node.currentState.nextMoves();
-        for (Board gameState : gameStates) {
-            totalWeight += gameState.moveWeight;
+        Move[] nextMoves = node.currentState.nextMoves();
+        for (Move move : nextMoves) {
+            totalWeight += move.moveWeight;
+            Board gameState = PieceMoves.movePiece(move, node.currentState);
+            gameState.moveWeight = move.moveWeight;
+            gameState.turnColor = gameState.oppColor();
             MCNode newNode = new MCNode(gameState, node);
             node.newChild(newNode);
         } // for
@@ -190,8 +195,8 @@ public class MCT {
 
         /* Run the loop while the game is undecided */
         while (true) {
-            Board nextGameState = gameState.ranWeightedMove(ThreadLocalRandom.current());
-            if (nextGameState == null) {
+            Move nextMove = gameState.ranWeightedMove(ThreadLocalRandom.current());
+            if (nextMove == null) {
                 double vicPoints = gameState.vicPoints();
                 // int material = gameState.material();
                 // vicPoints = vicPoints + 0.1 * Math.signum(material) * Math.min(Math.abs(material), 10);
@@ -199,7 +204,8 @@ public class MCT {
                 return vicPoints;
             } // if
 
-            gameState = nextGameState;
+            gameState = PieceMoves.movePiece(nextMove, gameState);
+            gameState.turnColor = gameState.oppColor();
             int material = gameState.material();
 
             /*

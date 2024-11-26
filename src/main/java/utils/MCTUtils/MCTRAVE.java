@@ -16,6 +16,8 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import utils.Board;
+import utils.Move;
+import utils.PieceMoves;
 
 /**
  * A class that constructs and runs a Monte Carlo Tree Search.
@@ -49,7 +51,7 @@ public class MCTRAVE {
         while (!node.nextMoves.isEmpty()) {
             node.currentState.printBoard(pen);
             pen.println(
-                    "Board was played " + node.playOuts + " times, with a winrate of " + (node.wins / node.playOuts));
+                    "Board was played " + node.playOuts + " times, with a winrate of " + ((node.wins + node.AMAFwins) / (node.playOuts + node.AMAFplayOuts)));
             node = Collections.max(node.nextMoves, Comparator.comparingInt(n -> n.playOuts));
         } // while
     }
@@ -85,12 +87,12 @@ public class MCTRAVE {
             if (root.nextMoves.isEmpty()) {
                 return null;
             }
-            MCNode bestNode = Collections.max(root.nextMoves, Comparator.comparingDouble(n -> n.wins));
+            MCNode bestNode = Collections.max(root.nextMoves, Comparator.comparingInt(n -> n.playOuts));
             pool.shutdown();
             printLikelyScenario(pen, bestNode);
             pen.println("Simulated " + iterations + " games.");
             pen.printf("Chosen move was played %d times with a simulated win rate of %.2f%%\n",
-                    bestNode.playOuts, (bestNode.wins / bestNode.playOuts) * 100);
+                    bestNode.playOuts + bestNode.AMAFplayOuts, ((bestNode.wins + bestNode.AMAFwins) / (bestNode.playOuts + bestNode.AMAFplayOuts)) * 100);
 
             return bestNode.currentState;
         }
@@ -134,7 +136,7 @@ public class MCTRAVE {
      * @return The best possible node from the beginning node.
      */
     public static MCNode select(MCNode node) {
-        while (!node.currentState.isGameOver()) {
+        while (!node.currentState.isGameOver()) { //BROKEN
             if (node.nextMoves.isEmpty() || node.playOuts == 0) {
                 return node;
             } // if
@@ -160,10 +162,14 @@ public class MCTRAVE {
         int totalWeight = 0;
 
         /* Add all possible children to the node */
-        Board[] gameStates = node.currentState.nextMoves();
-        for (Board gameState : gameStates) {
-            totalWeight += gameState.moveWeight;
+        Move[] nextMoves = node.currentState.nextMoves();
+        for (Move move : nextMoves) {
+            totalWeight += move.moveWeight;
+            Board gameState = PieceMoves.movePiece(move, node.currentState);
+            gameState.moveWeight = move.moveWeight;
+            gameState.turnColor = gameState.oppColor();
             MCNode newNode = new MCNode(gameState, node);
+            newNode.move = move;
             node.newChild(newNode);
         } // for
 
@@ -198,13 +204,13 @@ public class MCTRAVE {
     public static SimResult simulate(MCNode node) throws Exception {
         Board gameState = node.currentState;
         int depth = 0;
-        HashSet<Board> gameSim = new HashSet<>();
-        // PrintWriter pen = new PrintWriter(System.out, true);
+        HashSet<Move> gameSim = new HashSet<>();
+        //  PrintWriter pen = new PrintWriter(System.out, true);
 
         /* Run the loop while the game is undecided */
         while (true) {
-            Board nextGameState = gameState.ranWeightedMove(ThreadLocalRandom.current());
-            if (nextGameState == null) {
+            Move nextMove = gameState.ranWeightedMove(ThreadLocalRandom.current());
+            if (nextMove == null) {
                 double vicPoints = gameState.vicPoints();
                 // int material = gameState.material();
                 // vicPoints = vicPoints + 0.1 * Math.signum(material) * Math.min(Math.abs(material), 10);
@@ -212,8 +218,9 @@ public class MCTRAVE {
                 return new SimResult(gameSim, vicPoints);
             } // if
 
-            gameState = nextGameState;
-            gameSim.add(gameState);
+            gameState = PieceMoves.movePiece(nextMove, gameState);
+            gameState.turnColor = gameState.oppColor();
+            gameSim.add(nextMove);
             int material = gameState.material();
 
             /*
@@ -253,7 +260,7 @@ public class MCTRAVE {
      * @param winPoints The number of points to be given.
      * @param root      The root of the MCT
      */
-    public static synchronized void backPropagate(MCNode node, double winPoints, MCNode root, HashSet<Board> gameSim) {
+    public static synchronized void backPropagate(MCNode node, double winPoints, MCNode root, HashSet<Move> gameSim) {
         MCNode curNode = node;
         while (curNode != null) {
             curNode.playOuts++;
@@ -267,7 +274,7 @@ public class MCTRAVE {
 
         /* For AMAF */
         for (MCNode nextMove : root.nextMoves) {
-            if (gameSim.contains(nextMove.currentState)) {
+            if (gameSim.contains(nextMove.move)) {
                 nextMove.AMAFplayOuts++;
             if (nextMove.currentState.turnColor != nextMove.currentState.engineColor) {
                 nextMove.AMAFwins += winPoints;

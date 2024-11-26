@@ -7,6 +7,7 @@ import java.util.Scanner;
 import utils.Board;
 import utils.MCTUtils.MCT;
 import utils.MCTUtils.MCTRAVE;
+import utils.Move;
 import utils.PieceMoves;
 import utils.PieceTypes;
 import utils.UIutils;
@@ -32,13 +33,20 @@ public class midBot {
 
         Board playingBoard = new Board(PieceTypes.WHITE, engineColor);
         playingBoard.startingPos();
-        pen.println("Enter engine Heuristic (RAVE/UCT)");
+        // Move g4 = new Move(49, 51, PieceTypes.WHITE_PAWN);
+        // Move e5 = new Move(38, 36, PieceTypes.BLACK_PAWN);
+        // Move f3 = new Move(41, 42, PieceTypes.WHITE_PAWN);
+        // Move Qh4 = new Move(31, 59, PieceTypes.BLACK_QUEEN);
+        // playingBoard = PieceMoves.movePiece(g4, playingBoard);
+        // playingBoard = PieceMoves.movePiece(e5, playingBoard);
+        // playingBoard = PieceMoves.movePiece(f3, playingBoard);
+        // playingBoard = PieceMoves.movePiece(Qh4, playingBoard);
+        pen.println("Enter engine selection process (RAVE/UCT)");
 
         input = eyes.nextLine();
         String searchType = input;
         int start;
         int end;
-        boolean promotePiece = false;
         pen.println("Enter starting duration:");
         input = eyes.nextLine();
         Duration duration = Duration.ofSeconds(Integer.parseInt(input));
@@ -53,13 +61,14 @@ public class midBot {
             pen.println("\nEnding Square:");
             input = eyes.nextLine();
             end = UIutils.tosquareIndex(input);
-            playingBoard = PieceMoves.movePiece(start, end, playingBoard);
+            Move nextMove = new Move(start, end, playingBoard.getSquare(start));
+            playingBoard = PieceMoves.movePiece(nextMove, playingBoard);
             playingBoard.turnColor = playingBoard.oppColor();
         }
         while (!input.equals("QUIT")) {
             pen.println("----------------");
-            MCTRAVE searchTreeRAVE = null;
-            MCT searchTreeUCT = null;
+            MCTRAVE searchTreeRAVE;
+            MCT searchTreeUCT;
             if (searchType.equals("RAVE")) {
                 searchTreeRAVE = new MCTRAVE(playingBoard);
                 playingBoard = searchTreeRAVE.search(duration);
@@ -84,26 +93,23 @@ public class midBot {
                 input = eyes.nextLine();
                 duration = Duration.ofSeconds(Integer.parseInt(input));
                 pen.print("\n----------------\n");
-                playingBoard = PieceMoves.movePiece(32, 48, playingBoard);
-                playingBoard = PieceMoves.movePiece(56, 40, playingBoard);
+                Move castleking = new Move(39, 55, PieceTypes.BLACK_KING);
+                Move castleRook = new Move(63, 47, PieceTypes.BLACK_ROOK);
+                playingBoard = PieceMoves.movePiece(castleking, playingBoard);
+                playingBoard = PieceMoves.movePiece(castleRook, playingBoard);
                 playingBoard.printBoard(pen);
                 playingBoard.turnColor = playingBoard.oppColor();
                 continue;
             }
             end = UIutils.tosquareIndex(input);
-            if (input.length() > 2) {
-                promotePiece = true;
-            } // if
 
             pen.println("Duration to run:");
             input = eyes.nextLine();
             duration = Duration.ofSeconds(Integer.parseInt(input));
             pen.print("\n----------------\n");
-            playingBoard = PieceMoves.movePiece(start, end, playingBoard);
-            if (promotePiece ) {
-                playingBoard.setSquare(end, PieceTypes.BLACK_QUEEN);
-                promotePiece = false;
-            } // if
+            Move nextMove = new Move(start, end, playingBoard.getSquare(start));
+            playingBoard = PieceMoves.movePiece(nextMove, playingBoard);
+
             playingBoard.printBoard(pen);
             playingBoard.turnColor = playingBoard.oppColor();
         }
