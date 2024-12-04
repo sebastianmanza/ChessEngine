@@ -6,8 +6,6 @@ import java.util.Scanner;
 
 import utils.Board;
 import utils.MCTUtils.MCT;
-import utils.MCTUtils.MCTPPR;
-import utils.MCTUtils.MCTRAVE;
 import utils.Move;
 import utils.PieceMoves;
 import utils.PieceTypes;
@@ -68,23 +66,24 @@ public class midBot {
         }
         while (!input.equals("QUIT")) {
             pen.println("----------------");
-            MCTRAVE searchTreeRAVE;
-            MCT searchTreeUCT;
-            MCTPPR searchTreePPR;
-            switch (searchType) {
-                case "RAVE" -> {
-                    searchTreeRAVE = new MCTRAVE(playingBoard);
-                    playingBoard = searchTreeRAVE.search(duration);
-                }
-                case "UCT" -> {
-                    searchTreeUCT = new MCT(playingBoard);
-                    playingBoard = searchTreeUCT.search(duration);
-                }
-                default -> {
-                    searchTreePPR = new MCTPPR(playingBoard);
-                    playingBoard = searchTreePPR.search(duration);
-                }
-            }
+            //MCTRAVE searchTreeRAVE;
+            MCT searchTreeUCT = new MCT(playingBoard);
+            playingBoard = searchTreeUCT.search(duration);
+            //MCTPPR searchTreePPR;
+            // switch (searchType) {
+            //     case "RAVE" -> {
+            //         searchTreeRAVE = new MCTRAVE(playingBoard);
+            //         playingBoard = searchTreeRAVE.search(duration);
+            //     }
+            //     case "UCT" -> {
+            //         searchTreeUCT = new MCT(playingBoard);
+            //         playingBoard = searchTreeUCT.search(duration);
+            //     }
+            //     default -> {
+            //         searchTreePPR = new MCTPPR(playingBoard);
+            //         playingBoard = searchTreePPR.search(duration);
+            //     }
+            // }
 
             if (playingBoard == null) {
                 pen.println("Game Over.");

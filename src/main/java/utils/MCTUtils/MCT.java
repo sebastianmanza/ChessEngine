@@ -61,7 +61,10 @@ public class MCT {
         Instant deadline = start.plus(duration);
         PrintWriter pen = new PrintWriter(System.out, true);
 
-        ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+        int processors = Runtime.getRuntime().availableProcessors();
+        //int processors = 16;
+
+        ExecutorService executor = Executors.newFixedThreadPool(processors);
 
         Runnable MCTSworker = () -> {
             while (Instant.now().isBefore(deadline)) {
@@ -103,7 +106,7 @@ public class MCT {
                 bestNode.playOuts.get(), bestNode.winRate.get() * 100);
                 int i = 0;
         for (MCTNode child : root.nextMoves) {
-            System.out.printf("Move: %d Win rate: %.2f, Standard dev: %.2f Playouts: %d, Avg length: %.2f, Length sd: %.2f\n", i++, (child.winRate.get() * 100), child.standardErr.get() * 100, child.playOuts.get(), child.avgLength.get(), child.lengthstdDev.get());
+            System.out.printf("Move: %d Win rate: %.2f, Standard dev: %.2f Playouts: %d, Avg length: %.2f, Length sd: %.2f\n", i++, (child.winRate.get() * 100), child.standardErr.get() * 100, child.playOuts.get(), child.avgLength.get(), Math.sqrt(child.lengthstdDev.get()));
         }
 
         return bestNode.currentState;
@@ -270,9 +273,13 @@ public class MCT {
                 double stdError = Math.sqrt((winRate * (1 - winRate)) / playOuts);
                 curNode.standardErr.set(stdError);
             }
-            double delta = length - curNode.avgLength.get();
-            curNode.avgLength.addAndGet(delta / curNode.playOuts.get());
-            curNode.lengthstdDev.addAndGet(delta * (length - curNode.avgLength.get()));
+
+
+            double prvMean = curNode.avgLength.get();
+            double delta = length - prvMean;
+            double curMean = prvMean + delta / curNode.playOuts.get();
+            curNode.avgLength.set(curMean);
+            curNode.lengthstdDev.addAndGet(delta * (length - curMean));
         }
             curNode = curNode.lastMove;
         } // while
@@ -290,7 +297,7 @@ public class MCT {
             double k = 1; // A double representing a weight for the sigmoid function
             
 
-            double stdLength = (endingNode.avgLength.get() - simLength) / endingNode.lengthstdDev.get();
+            double stdLength = (endingNode.avgLength.get() - simLength) / Math.sqrt(endingNode.lengthstdDev.get());
             double stdMaterial = gameState.material();
             double sigmoidLength = 1 / (1 + (Math.exp(-k * stdLength)));
             double sigmoidWins = 1 / (1 + (Math.exp(-k * stdMaterial)));
