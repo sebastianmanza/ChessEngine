@@ -34,14 +34,19 @@ public class MCTNode {
      */
     public MCTNode lastMove;
 
+    /** Has the board been given children? */
     public boolean isExpanded;
 
+    /** The winrate of the node */
     public AtomicDouble winRate;
 
+    /** The stderr of the winrate */
     public AtomicDouble standardErr;
 
+    /** The average length of a simulation from the node*/
     public AtomicDouble avgLength;
 
+    /** The standard deviation of the lengths */
     public AtomicDouble lengthstdDev;
 
 
@@ -62,7 +67,6 @@ public class MCTNode {
         this.standardErr = new AtomicDouble(0.0);
         this.avgLength = new AtomicDouble(0.0);
         this.lengthstdDev = new AtomicDouble(0.0);
-
     } //MCNode(Board, MCNode)
 
     /**
@@ -71,7 +75,7 @@ public class MCTNode {
      */
     public void newChild(MCTNode childNode) {
         this.nextMoves.offer(childNode);
-    }
+    } //newChild(MCTNode)
 
 
 
