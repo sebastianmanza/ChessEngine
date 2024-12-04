@@ -6,6 +6,7 @@ import java.util.Scanner;
 
 import utils.Board;
 import utils.MCTUtils.MCT;
+import utils.MCTUtils.MCTPPR;
 import utils.MCTUtils.MCTRAVE;
 import utils.Move;
 import utils.PieceMoves;
@@ -69,12 +70,20 @@ public class midBot {
             pen.println("----------------");
             MCTRAVE searchTreeRAVE;
             MCT searchTreeUCT;
-            if (searchType.equals("RAVE")) {
-                searchTreeRAVE = new MCTRAVE(playingBoard);
-                playingBoard = searchTreeRAVE.search(duration);
-            } else {
-                searchTreeUCT = new MCT(playingBoard);
-                playingBoard = searchTreeUCT.search(duration);
+            MCTPPR searchTreePPR;
+            switch (searchType) {
+                case "RAVE" -> {
+                    searchTreeRAVE = new MCTRAVE(playingBoard);
+                    playingBoard = searchTreeRAVE.search(duration);
+                }
+                case "UCT" -> {
+                    searchTreeUCT = new MCT(playingBoard);
+                    playingBoard = searchTreeUCT.search(duration);
+                }
+                default -> {
+                    searchTreePPR = new MCTPPR(playingBoard);
+                    playingBoard = searchTreePPR.search(duration);
+                }
             }
 
             if (playingBoard == null) {

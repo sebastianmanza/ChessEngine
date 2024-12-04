@@ -45,7 +45,9 @@ public class Board {
     /**
      * The number of pieces on the board.
      */
-    public int pieceCount;
+    public int enginePieceCount;
+
+    public int playerPieceCount;
 
     public boolean canCastle;
 
@@ -64,11 +66,12 @@ public class Board {
         this.engineColor = engineCol;
         this.hasLegalMoves = true;
         this.moveWeight = 2;
-        this.pieceCount = 0;
+        this.enginePieceCount = 0;
+        this.playerPieceCount = 0;
         this.canCastle = true;
         this.whiteKingSquare = 32;
         this.blackKingSquare = 39;
-        } // Board()
+    } // Board()
 
     /**
      * Sets a square on the board to a piece.
@@ -250,7 +253,7 @@ public class Board {
 
     public boolean inCheck(byte color) {
         return PieceMoves.inCheck(this, color);
-    } //inCheck(byte color)
+    } // inCheck(byte color)
 
     /**
      * Adds the value of a piece to a value.
@@ -304,10 +307,60 @@ public class Board {
                 default -> {
                 } // return nothing for default
             } // switch
-            this.pieceCount++;
-            if (this.engineColor == PieceTypes.BLACK) {
-                material = 0 - material;
+        } // for
+        if (this.engineColor == PieceTypes.BLACK) {
+            material = 0 - material;
+        } // if
+        return material;
+    } // material()
+    public int whiteMaterial() {
+        int material = 0;
+        for (int i = 0; i < 64; i++) {
+            byte piece = getSquare(i);
+            /* If the square is empty ignore it. */
+            if (piece == PieceTypes.EMPTY && pieceColor(piece) == PieceTypes.WHITE) {
+                continue;
             } // if
+            switch (piece) {
+                case PieceTypes.WHITE_PAWN -> material += 1;
+                case PieceTypes.WHITE_KNIGHT -> material += 3;
+                case PieceTypes.WHITE_BISHOP -> material += 3;
+                case PieceTypes.WHITE_ROOK -> material += 5;
+                case PieceTypes.WHITE_QUEEN -> material += 9;
+                default -> {
+                } // return nothing for default
+            } // switch
+            if (engineColor == PieceTypes.WHITE) {
+            this.enginePieceCount++;
+            } else {
+                this.playerPieceCount++;
+            }
+        } // for
+        return material;
+    } // material()
+
+    public int blackMaterial() {
+        int material = 0;
+        for (int i = 0; i < 64; i++) {
+            byte piece = getSquare(i);
+            /* If the square is empty ignore it. */
+            if (piece == PieceTypes.EMPTY && pieceColor(piece) == PieceTypes.BLACK) {
+                continue;
+            } // if
+            switch (piece) {
+                case PieceTypes.BLACK_PAWN -> material += 1;
+                case PieceTypes.BLACK_KNIGHT -> material += 3;
+                case PieceTypes.BLACK_BISHOP -> material += 3;
+                case PieceTypes.BLACK_ROOK -> material += 5;
+                case PieceTypes.BLACK_QUEEN -> material += 9;
+                default -> {
+                } // return nothing for default
+            } // switch
+            if (engineColor == PieceTypes.BLACK) {
+            this.enginePieceCount++;
+            } else {
+                this.playerPieceCount++;
+            }
         } // for
         return material;
     } // material()
@@ -322,9 +375,9 @@ public class Board {
      */
     public double vicPoints() {
         if (inCheck(PieceTypes.WHITE) && engineColor == PieceTypes.WHITE) {
-            return 0.0;
+            return 0;
         } else if (inCheck(PieceTypes.BLACK) && engineColor == PieceTypes.BLACK) {
-            return 0.0;
+            return 0;
         } else if (inCheck(PieceTypes.WHITE) && engineColor == PieceTypes.BLACK) {
             return 1.0;
         } else if (inCheck(PieceTypes.BLACK) && engineColor == PieceTypes.WHITE) {
@@ -368,11 +421,11 @@ public class Board {
      * @param rand A random object.
      * @return A board representing the move
      */
-    public Move ranWeightedMove(Random rand) throws Exception {
+    public Move ranWeightedMove(Random rand) {
         int[] moveSquares = new int[128];
         int mvsqr = 0;
 
-        PrintWriter pen = new PrintWriter(System.out, true);
+        //PrintWriter pen = new PrintWriter(System.out, true);
 
         for (int square = 0; square < 64; square++) {
             byte piece = this.getSquare(square);
@@ -387,11 +440,11 @@ public class Board {
                 for (Move move : pieceMoves) {
                     for (int i = 0; i < move.moveWeight; i++) {
                         if (mvsqr > (moveSquares.length / 2)) {
-                            moveSquares = Arrays.copyOf(moveSquares, moveSquares.length*2);
+                            moveSquares = Arrays.copyOf(moveSquares, moveSquares.length * 2);
                         }
                         moveSquares[mvsqr++] = square;
                     }
-                 }
+                }
             }
         }
 
@@ -413,15 +466,33 @@ public class Board {
                 if (!bestBoard.inCheck(this.turnColor)) {
                     playMove = move;
                     bestMove = move;
-                } //if
-            } //if
-        } //for
+                } // if
+            } // if
+        } // for
+        if (playMove == null) {
+            random = rand.nextInt(mvsqr);
+            square = moveSquares[random];
+
+            piecetoMove = getSquare(square);
+            options = generatePieceMoves(piecetoMove, square);
+
+            bestMove = options[0];
+            for (Move move : options) {
+                if (move.moveWeight > bestMove.moveWeight) {
+                    Board bestBoard = PieceMoves.movePiece(move, this);
+                    if (!bestBoard.inCheck(this.turnColor)) {
+                        playMove = move;
+                        bestMove = move;
+                    } // if
+                } // if
+            } // for
+        } // if
 
         if (playMove == null) {
             Move[] nextMoves = this.nextMoves();
             if (nextMoves.length == 0) {
                 return null;
-            } //if
+            } // if
             random = rand.nextInt(nextMoves.length);
             return nextMoves[random];
         }
@@ -464,6 +535,7 @@ public class Board {
              */
             for (Move pieceMove : pieceMoves) {
                 Board newBoard = PieceMoves.movePiece(pieceMove, this);
+
                 if (!newBoard.inCheck(this.turnColor)) {
                     nextPositions[numPossibleMoves] = pieceMove;
                     numPossibleMoves++;
@@ -499,7 +571,7 @@ public class Board {
          * be looked at
          */
         switch (piece) {
-            case PieceTypes.WHITE_PAWN, PieceTypes.BLACK_PAWN -> 
+            case PieceTypes.WHITE_PAWN, PieceTypes.BLACK_PAWN ->
                 pieceMoves = PieceMoves.pawnMoves(square, color, this);
             case PieceTypes.WHITE_KNIGHT, PieceTypes.BLACK_KNIGHT ->
                 pieceMoves = PieceMoves.knightMoves(square, color, this);
@@ -509,7 +581,7 @@ public class Board {
                 pieceMoves = PieceMoves.slideMoves(square, color, PieceTypes.WHITE_ROOK, this);
             case PieceTypes.WHITE_QUEEN, PieceTypes.BLACK_QUEEN ->
                 pieceMoves = PieceMoves.slideMoves(square, color, PieceTypes.WHITE_QUEEN, this);
-            case PieceTypes.WHITE_KING, PieceTypes.BLACK_KING -> 
+            case PieceTypes.WHITE_KING, PieceTypes.BLACK_KING ->
                 pieceMoves = PieceMoves.kingMoves(square, color, this);
             default -> throw new AssertionError();
         } // switch
@@ -532,4 +604,4 @@ public class Board {
         return returnState;
     } // copyBoard()
 
-} //Board
+} // Board

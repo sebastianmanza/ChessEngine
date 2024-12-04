@@ -1,4 +1,5 @@
 package utils;
+import java.util.Objects;
 
 public class Move {
     public int startingSquare;
@@ -21,5 +22,24 @@ public class Move {
         this.piece = piece;
         this.moveWeight = 2;
         this.promotePiece = promote;
+    }
+
+    public Move(String str) {
+        
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        Move other = (Move) obj;
+        return startingSquare == other.startingSquare &&
+               endingSquare == other.endingSquare &&
+               piece == other.piece;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(startingSquare, endingSquare, piece, promotePiece);
     }
 }

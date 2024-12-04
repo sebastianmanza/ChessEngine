@@ -9,13 +9,17 @@ import utils.Move;
 public class MCNode {
 
     /**
-     * The current move/game state
+     * The current boardstate
      */
     public Board currentState;
 
-    public Move move;
     /**
-     * The list of all possible nextMoves
+     * The last move applied.
+     */
+    public Move move;
+
+    /**
+     * The list of all possible next nodes
      */
     public List<MCNode> nextMoves;
     /**
@@ -23,8 +27,14 @@ public class MCNode {
      */
     public double wins;
 
+    /**
+     * The total wins of the move played at any time
+     */
     public double AMAFwins;
 
+    /**
+     * The total times this move was played
+     */
     public int AMAFplayOuts;
     /**
      * The number of times this was attempted
@@ -47,6 +57,7 @@ public class MCNode {
         this.playOuts = 0;
         this.AMAFplayOuts = 0;
         this.lastMove = parentNode;
+        this.move = null;
         this.nextMoves = new ArrayList<>();
     } //MCNode(Board, MCNode)
 

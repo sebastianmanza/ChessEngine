@@ -1,4 +1,3 @@
-
 package utils.MCTUtils;
 
 import java.io.PrintWriter;
@@ -14,6 +13,7 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import utils.Board;
 import utils.Move;
@@ -24,83 +24,107 @@ import utils.PieceMoves;
  * 
  * @author Sebastian Manza
  */
-public class MCTRAVE {
+public class MCTPPR {
     /** The exploration parameter, used to balance exploration vs exploitation */
     public static final double EXPLORATION_PARAM = Math.sqrt(2);
+
+    /** The ratio of node playouts to total playouts that should be reached  in order to prune */
+    public static final double TN = 0.1;
+
+    /** The minimum win rate for us to try a move */
+    public static final double TW = 0.3;
+
+    public static final double P = 0.4;
+
+    public static AtomicInteger numSimulations = new AtomicInteger(0);
 
     /** The root node of the move. (i.e. the move we are exploring from) */
     MCNode root;
 
+    /* The number of nodes we pruned. */
+    public static AtomicInteger prunedNodes = new AtomicInteger(0);
+
     /**
-     * Creates a new Monte Carlo Treee
+     * Creates a new Monte Carlo Tree using PPR (pruning)
      * 
      * @param currentMove The most recent move made.
      */
-    public MCTRAVE(Board currentMove) {
+    public MCTPPR(Board currentMove) {
         this.root = new MCNode(currentMove, null);
-    }
+        prunedNodes = new AtomicInteger(0);
+        numSimulations = new AtomicInteger(0);
+    } // MCTPPR(currentMove)
 
     /**
-     * Searches for the best possible move to be made from the current game state.
+     * Print the most likely sequence of movesas selected by the engine;
      * 
-     * @param duration The amount of time to run the search for
-     * @return The best possible move
+     * @param pen  The printwriter object to write with.
+     * @param root The node to start the printing with
+     * @throws Exception if pen fails in some way
      */
     public static void printLikelyScenario(PrintWriter pen, MCNode root) throws Exception {
         MCNode node = root;
         while (!node.nextMoves.isEmpty()) {
             node.currentState.printBoard(pen);
             pen.println(
-                    "Board was played " + node.playOuts + " times, with a winrate of " + ((node.wins + node.AMAFwins) / (node.playOuts + node.AMAFplayOuts)));
+                    "Board was played " + node.playOuts + " times, with a winrate of " + (node.wins / node.playOuts));
             node = Collections.max(node.nextMoves, Comparator.comparingInt(n -> n.playOuts));
         } // while
-    }
+    } // printLikelyScenario(PrintWriter, MCNode)
 
+    /**
+     * Searches for the best node in the tree.
+     * 
+     * @param duration the time to run it for
+     * @return A board representing the best node
+     * @throws Exception if the printwriter messes up
+     */
     public Board search(Duration duration) throws Exception {
         Instant start = Instant.now();
         Instant deadline = start.plus(duration);
         AtomicInteger iterations = new AtomicInteger(0);
         PrintWriter pen = new PrintWriter(System.out, true);
+
         try (ForkJoinPool pool = new ForkJoinPool()) {
             /* Runs for a set duration of time */
             while (Instant.now().isBefore(deadline)) {
                 MCNode selectedNode = select(root);
                 MCNode expandedNode = expand(selectedNode);
+                ArrayList<Move> movesToPlay = prune(expandedNode, root);
 
                 /* Runs parallel simulations for the expanded node */
                 List<Callable<SimResult>> tasks = new ArrayList<>();
 
-                int numSimulations = Runtime.getRuntime().availableProcessors();
+                int numSims = Runtime.getRuntime().availableProcessors();
 
-                for (int i = 0; i < numSimulations; i++) {
-                    tasks.add(() -> simulate(expandedNode));
+                for (int i = 0; i < numSims; i++) {
+                    tasks.add(() -> simulate(expandedNode, movesToPlay));
                     iterations.incrementAndGet();
                 } // for
 
                 List<Future<SimResult>> results = pool.invokeAll(tasks);
                 for (Future<SimResult> result : results) {
-                    SimResult gameSim = result.get();
-                    backPropagate(expandedNode, gameSim.winPoints, root, gameSim.gameSim);
+                    SimResult sim = result.get();
+                    backPropagate(expandedNode, sim.winPoints, root, sim.gameSim);
                 } // for
             } // while
             /* Find the best move based on the node that was played the most */
             if (root.nextMoves.isEmpty()) {
                 return null;
-            }
+            } // if
             MCNode bestNode = Collections.max(root.nextMoves, Comparator.comparingInt(n -> n.playOuts));
             pool.shutdown();
             printLikelyScenario(pen, bestNode);
-            pen.println("Simulated " + iterations + " games.");
+            pen.println("Simulated " + numSimulations.get() + " games.");
             pen.printf("Chosen move was played %d times with a simulated win rate of %.2f%%. \nIt was played an additional %d times in other games, with a win rate of %.2f%%\n",
                     bestNode.playOuts, (bestNode.wins/ bestNode.playOuts) * 100, bestNode.AMAFplayOuts, (bestNode.AMAFwins / bestNode.AMAFplayOuts) * 100);
 
             return bestNode.currentState;
-        }
+        } // try
     } // search(Duration)
 
     /**
-     * Calculates a value for a node to select using a comination of 
-     * UCB (Upper Confidence Bound) and AMAF (all-moves-as-first) methods
+     * Calculates a value for a node to select using UCB1.
      * 
      * @param node The node to calculate
      * @return The value of the node
@@ -136,24 +160,53 @@ public class MCTRAVE {
      * @return The best possible node from the beginning node.
      */
     public static MCNode select(MCNode node) {
-        while (!node.currentState.isGameOver()) { //BROKEN
+        while (!node.currentState.isGameOver()) {
             if (node.nextMoves.isEmpty() || node.playOuts == 0) {
                 return node;
             } // if
 
-            /*
-             * Shuffle it so if none have been tried it selects something random, then
-             * return the
-             * node with the highest UCT
-             */
+            double numSim = Math.log(node.playOuts);
+            double topLBound = Double.NEGATIVE_INFINITY;
+            double topUBound = Double.NEGATIVE_INFINITY;
+
+            /* Find the node with the highest UCB */
+            for (MCNode move : node.nextMoves) {
+                double winRate = (move.wins / (move.playOuts + 0.001));
+                double CI = EXPLORATION_PARAM * Math.sqrt(numSim / (move.playOuts + 0.001));
+                double UBound = winRate + CI;
+
+                if (UBound > topUBound) {
+                    topUBound = UBound;
+                    topLBound = winRate - CI;
+                } // if
+            } // for
+
+            ArrayList<MCNode> prune = new ArrayList<>();
+
+            /* Prune any node thats upper bound is lower than the best nodes lower bound */
+            for (MCNode checkNode : node.nextMoves) {
+                double winRate = (checkNode.wins / (checkNode.playOuts + 0.001));
+                double CI = EXPLORATION_PARAM * Math.sqrt(numSim / (checkNode.playOuts + 0.001));
+                double Ubound = winRate + CI;
+                if (Ubound < topLBound) {
+                    prune.add(checkNode);
+                    prunedNodes.incrementAndGet();
+                } // if
+            } // for
+            /* Filter the nodes */
+            node.nextMoves = node.nextMoves.stream()
+                    .filter(checkNode -> !prune.contains(checkNode))
+                    .collect(Collectors.toList());
+
+            /* Return the node with the highest RAVE */
             Collections.shuffle(node.nextMoves);
-            node = Collections.max(node.nextMoves, Comparator.comparingDouble(MCTRAVE::RAVE));
+            node = Collections.max(node.nextMoves, Comparator.comparingDouble(MCTPPR::RAVE));
         } // while
         return node;
     } // select(MCNode)
 
     /**
-     * Expands the tree one level deeper to continue searching
+     * Expands the tree one level deeper to continue searching.
      * 
      * @param node The first node reached with no children.
      * @return The expanded node.
@@ -187,80 +240,92 @@ public class MCTRAVE {
                 return curNode;
             } // if
         } // for
+        /* Backup: grab a random node */
         return node.nextMoves.get(ThreadLocalRandom.current().nextInt(node.nextMoves.size()));
     } // expand(node)
 
+    public static ArrayList<Move> prune(MCNode expandedNode, MCNode root) {
+        ArrayList<Move> movesToPlay= new ArrayList<>();
+
+        for (MCNode move : root.nextMoves) {
+            if ((move.wins + move.AMAFwins) / (move.playOuts + move.AMAFplayOuts + 0.001) > TW) {
+                movesToPlay.add(move.move);
+            }
+              
+        } //for
+
+        return movesToPlay;
+    } //prune(MCNode, MCNode)
+
     /**
-     * Randomly simulates the finish of the game from the current game state. Note:
-     * current
-     * implementation creates lists of all future moves and chooses randomly. Could
-     * be made more
-     * efficient by creating just one random move?
+     * Randomly simulates the finish of the game from the current game state.
      * 
      * @param node The terminating node
      * @return the number of win-points
      */
 
-    public static SimResult simulate(MCNode node) throws Exception {
+    public static SimResult simulate(MCNode node, ArrayList<Move> moves) throws Exception {
+        numSimulations.incrementAndGet();
         Board gameState = node.currentState;
         int depth = 0;
-        HashSet<Move> gameSim = new HashSet<>();
-        //  PrintWriter pen = new PrintWriter(System.out, true);
+        HashSet<Move> moveList = new HashSet<>(100);
+        ArrayList<Move> movesToPlay = new ArrayList<>(moves);
 
         /* Run the loop while the game is undecided */
         while (true) {
-            Move nextMove = gameState.ranWeightedMove(ThreadLocalRandom.current());
+            double move = ThreadLocalRandom.current().nextDouble(1);
+            int PPRmove = 0;
+            if (!movesToPlay.isEmpty()) {
+            PPRmove = ThreadLocalRandom.current().nextInt(movesToPlay.size());
+            } //if
+            Move nextMove = null;
+            boolean legalMove = false;
+
+            if (move <= P && !movesToPlay.isEmpty()) {
+                nextMove = movesToPlay.remove(PPRmove);
+                Move[] nextMoves = gameState.nextMoves();
+                for (Move legal : nextMoves) {
+                    if (legal.equals(nextMove)) {
+                        legalMove = true;
+                        break;
+                    } //if
+                } //for
+            }  //if
+            if (!legalMove || move > P) {
+                nextMove = gameState.ranWeightedMove(ThreadLocalRandom.current());
+            } //if
             if (nextMove == null) {
                 double vicPoints = gameState.vicPoints();
-                // int material = gameState.material();
-                // vicPoints = vicPoints + 0.1 * Math.signum(material) * Math.min(Math.abs(material), 10);
-                // return Math.max(0, Math.min(1, vicPoints));
-                return new SimResult(gameSim, vicPoints);
+                
+                return new SimResult(moveList, vicPoints);
             } // if
-
+            /* Apply the move. */
+            moveList.add(nextMove);
             gameState = PieceMoves.movePiece(nextMove, gameState);
             gameState.turnColor = gameState.oppColor();
-            gameSim.add(nextMove);
             int material = gameState.material();
-
-            /*
-             * If it's searched a little bit of depth and the material advantage is clear,
-             * give a
-             * win or a loss.
-             */
-            if (depth >= 10) {
-                if (gameState.turnColor != gameState.engineColor && material < -9) {
-                    return new SimResult(gameSim, 0.15);
-                } else if (gameState.turnColor == gameState.engineColor && material > 9) {
-                    return new SimResult(gameSim, 0.85);
-                } // if
-            }
-
-            /* If it's searched far in, assume a weighted draw. */
-            if (depth++ >= 200) {
-                if (material > 3) {
-                    return new SimResult(gameSim, 0.6);
-                } else if (material < -3) {
-                    return new SimResult(gameSim, 0.4);
-                } else
-                    return new SimResult(gameSim, 0.5);
+            /* Search to sufficient depth and return a win/loss.draw */
+            if (depth++ > 100) {
+                if (material > 5) {
+                    return new SimResult(moveList, 0.75);
+                } else if (material < -5) {
+                    return new SimResult(moveList, 0.25);
+                } else {
+                    return new SimResult(moveList, 0.5);
+                } // if/else
             } // if
-              // gameState.printBoard(pen);
-              // pen.println("Material" + gameState.material());
         } // while
-          // pen.println("Points" + gameState.vicPoints());
     } // simulate(MCNode)
 
     /**
-     * Increments the total wins of every previous node by 1.0 if won, 0.5 if drawn,
-     * and 0 if lost.
+     * Increments the total wins of every previous node by the points won.
      * Increments total playouts by 1 for each regardless.
      * 
      * @param node      The node to backpropagate from (terminating node)
      * @param winPoints The number of points to be given.
      * @param root      The root of the MCT
      */
-    public static synchronized void backPropagate(MCNode node, double winPoints, MCNode root, HashSet<Move> gameSim) {
+    public static synchronized void backPropagate(MCNode node, double winPoints, MCNode root, HashSet<Move> sim) {
         MCNode curNode = node;
         while (curNode != null) {
             curNode.playOuts++;
@@ -271,29 +336,21 @@ public class MCTRAVE {
             } // if/else
             curNode = curNode.lastMove;
         } // while
+        propagateAMAF(root, sim, winPoints);
 
-        propagateAMAF(root, gameSim, winPoints);
-
+        
     } // backPropogate(MCNode, double, MCNode)
 
     public static void propagateAMAF(MCNode root, HashSet<Move> gameSim, double winPoints) {
-        ArrayList<MCNode> stack = new ArrayList<>();
-        stack.add(root);
-    
-        while (!stack.isEmpty()) {
-            MCNode node = stack.remove(stack.size() - 1);
-    
-            if (gameSim.contains(node.move)) {
-                node.AMAFplayOuts++;
-                if (node.currentState.turnColor != node.currentState.engineColor) {
-                    node.AMAFwins += winPoints;
+        for (MCNode move : root.nextMoves) {
+            if (gameSim.contains(move.move)) {
+                move.AMAFplayOuts++;
+                if (move.currentState.turnColor != move.currentState.engineColor) {
+                    move.AMAFwins += winPoints;
                 } else {
-                    node.AMAFwins += (1 - winPoints);
-                }
-            }
-
-            stack.addAll(node.nextMoves);
-        }
-    }
-} // MCTRAVE
-
+                    move.AMAFwins += (1 - winPoints);
+                } //if
+            } //if
+        } //for
+    } //propagateAMAF
+} // MCT
