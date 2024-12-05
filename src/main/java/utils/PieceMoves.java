@@ -187,6 +187,9 @@ public class PieceMoves {
         boolean reachPromotionSquare = (square % 8 == promotionRow);
 
         int forward = square + direction;
+        if (forward > 63 || forward < 0) {
+            return Arrays.copyOfRange(pawnMoves, 0, numMoves);
+        }
 
         /* If it can reach the promotion square, expand the number of possible moves. */
         if (reachPromotionSquare) {
@@ -443,7 +446,6 @@ public class PieceMoves {
                     && (Math.abs(endingCol - col) <= 1)
                     && ((piece == PieceTypes.EMPTY) || (pieceColor != color))) {
                 kingMoves[numMoves] = new Move(square, endingSquare, kingType);
-                kingMoves[numMoves].moveWeight -= 1;
                 // kingMoves[numMoves].kingSquare = endingSquare;
                 // kingMoves[numMoves].canCastle = false;
 
@@ -479,6 +481,7 @@ public class PieceMoves {
                 && !movePiece(kingToRight, currentState).inCheck(kingColor)
                 && !movePiece(kingToRight2, currentState).inCheck(kingColor)) {
                     castles.add(new Move(-1, -1, king));
+                    castles.get(castles.size() - 1).moveWeight += 10;
         }
 
         return castles.toArray(Move[]::new);

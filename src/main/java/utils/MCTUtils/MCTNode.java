@@ -6,6 +6,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import com.google.common.util.concurrent.AtomicDouble;
 
 import utils.Board;
+import utils.Move;
 
 /**
  * A thread-safe variation of MCNode for asynchronous work.
@@ -49,6 +50,8 @@ public class MCTNode {
     /** The standard deviation of the lengths */
     public AtomicDouble lengthstdDev;
 
+    public Move move;
+
 
 
     /**
@@ -67,6 +70,7 @@ public class MCTNode {
         this.standardErr = new AtomicDouble(0.0);
         this.avgLength = new AtomicDouble(0.0);
         this.lengthstdDev = new AtomicDouble(0.0);
+        this.move = null;
     } //MCNode(Board, MCNode)
 
     /**

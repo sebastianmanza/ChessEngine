@@ -414,6 +414,45 @@ public class Board {
         } // if/else
     } // oppColor()
 
+    public boolean isCheckmate(byte color) {
+        if (!inCheck(color)) return false;
+        Move[] legalMoves = nextMoves();
+        return legalMoves.length == 0;
+    }
+
+    public Move ranNextMove(Random rand) {
+        Move[] possMoves = nextMoves();
+        if (possMoves.length == 0) {
+            return null;
+        }
+    
+        int totalWeight = 0;
+        for (Move move : possMoves) {
+            if (move.moveWeight <= 0) {
+                move.moveWeight = 1;
+            }
+            totalWeight += move.moveWeight;
+        }
+    
+        if (totalWeight <= 0) {
+            System.out.println("Invalid total weight: " + totalWeight);
+            return null;
+        }
+    
+        int pick = rand.nextInt(totalWeight);
+        int cumulativeWeight = 0;
+    
+        for (Move move : possMoves) {
+            cumulativeWeight += move.moveWeight;
+            if (pick < cumulativeWeight) {
+                return move;
+            }
+        }
+    
+        return possMoves[possMoves.length - 1];
+    }
+    
+
     /**
      * Creates a random weighted move from all possible next moves. More likely to
      * return a capture of higher value.
@@ -538,6 +577,30 @@ public class Board {
 
                 if (!newBoard.inCheck(this.turnColor)) {
                     nextPositions[numPossibleMoves] = pieceMove;
+                    if (newBoard.inCheck(this.oppColor())) {
+                        newBoard.turnColor = this.oppColor();
+                        if (newBoard.nextMoves().length == 0) {
+                            pieceMove.moveWeight *= 10000;
+                        } //if
+                        pieceMove.moveWeight *= 10;
+                        newBoard.turnColor = this.turnColor;
+                    } //if
+                    
+                    // /* In the simplest way possible, check if the opposing king is in check. */
+                    // Move[] pieceChecks = newBoard.generatePieceMoves(pieceMove.piece, pieceMove.endingSquare);
+                    // for (Move pieceCheck : pieceChecks) {
+                    //     int oppKingSquare = (this.turnColor == PieceTypes.WHITE) ? blackKingSquare : whiteKingSquare;
+                    //     /* If the move can hit the opposite king, it is a check. */
+                    //     if (pieceCheck.endingSquare == oppKingSquare) {
+                    //         newBoard.turnColor = this.oppColor();
+                    //         if (newBoard.nextMoves().length == 0) {
+                    //             pieceMove.moveWeight *= 10000;
+                    //         } else {
+                    //             pieceMove.moveWeight *= 10;
+                    //         }
+                    //         newBoard.turnColor = this.turnColor;
+                    //     }
+                    // }
                     numPossibleMoves++;
                     if (numPossibleMoves >= nextPositions.length) {
                         /* Expand the array if it's full. */

@@ -13,6 +13,7 @@ import java.util.concurrent.TimeUnit;
 import utils.Board;
 import utils.Move;
 import utils.PieceMoves;
+import utils.UIutils;
 
 /**
  * A class that constructs and runs a Monte Carlo Tree Search.
@@ -82,7 +83,7 @@ public class MCT {
                 } // try/catch
             } // while
         };
-        for (int i = 0; i < Runtime.getRuntime().availableProcessors(); i++) {
+        for (int i = 0; i < processors; i++) {
             executor.submit(MCTSworker);
         } // for
         executor.shutdown();
@@ -99,13 +100,17 @@ public class MCT {
         pen.println("Simulated " + root.playOuts.get() + " games.");
         pen.printf("Chosen move was played %d times with a simulated win rate of %.2f%%\n",
                 bestNode.playOuts.get(), bestNode.winRate.get() * 100);
-        int i = 0;
-        for (MCTNode child : root.nextMoves) {
+
+        int size = root.nextMoves.size();
+        for (int i = 0; i < size; i++) {
+            MCTNode worst = Collections.min(root.nextMoves, Comparator.comparingInt(n -> n.playOuts.get()));
             System.out.printf(
-                    "Move: %d Win rate: %.2f, Standard dev: %.2f Playouts: %d, Avg length: %.2f, Length sd: %.2f\n",
-                    i++, (child.winRate.get() * 100), child.standardErr.get() * 100, child.playOuts.get(),
-                    child.avgLength.get(), Math.sqrt(child.lengthstdDev.get()));
-        } // for
+                    "Move: %s Win CI [%.2f, %.2f] Playouts: %d, Length CI [%.2f, %.2f]\n",
+                    UIutils.toNotation(worst.move), ((worst.winRate.get() * 100) - (worst.standardErr.get() * 100)), ((worst.winRate.get() * 100) + (worst.standardErr.get() * 100)), worst.playOuts.get(),
+                    (worst.avgLength.get() - Math.sqrt(worst.lengthstdDev.get())), (worst.avgLength.get() + Math.sqrt(worst.lengthstdDev.get())));
+            root.nextMoves.remove(worst);
+        } //for
+
 
         return bestNode.currentState;
     } // search(Duration)
@@ -173,6 +178,7 @@ public class MCT {
                         gameState.moveWeight = move.moveWeight;
                         gameState.turnColor = gameState.oppColor();
                         MCTNode newNode = new MCTNode(gameState, node);
+                        newNode.move = move;
                         node.newChild(newNode);
                     } // for
                 }
@@ -202,7 +208,7 @@ public class MCT {
 
         /* Run the loop while the game is undecided */
         while (true) {
-            Move nextMove = gameState.ranWeightedMove(ThreadLocalRandom.current());
+            Move nextMove = gameState.ranNextMove(ThreadLocalRandom.current());
 
             /*
              * If the game is checkmate/stalemate or if the depth is too far, end the game
