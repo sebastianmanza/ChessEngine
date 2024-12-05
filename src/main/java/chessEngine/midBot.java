@@ -10,6 +10,7 @@ import utils.Move;
 import utils.PieceMoves;
 import utils.PieceTypes;
 import utils.UIutils;
+import utils.setBoards;
 
 public class midBot {
     public static void main(String[] args) throws Exception {
@@ -30,16 +31,13 @@ public class midBot {
             engineColor = PieceTypes.WHITE;
         } // if/else
 
-        Board playingBoard = new Board(PieceTypes.WHITE, engineColor);
-        playingBoard.startingPos();
-        // Move g4 = new Move(49, 51, PieceTypes.WHITE_PAWN);
-        // Move e5 = new Move(38, 36, PieceTypes.BLACK_PAWN);
-        // Move f3 = new Move(41, 42, PieceTypes.WHITE_PAWN);
-        // Move Qh4 = new Move(31, 59, PieceTypes.BLACK_QUEEN);
-        // playingBoard = PieceMoves.movePiece(g4, playingBoard);
-        // playingBoard = PieceMoves.movePiece(e5, playingBoard);
-        // playingBoard = PieceMoves.movePiece(f3, playingBoard);
-        // playingBoard = PieceMoves.movePiece(Qh4, playingBoard);
+        // Board playingBoard = new Board(PieceTypes.WHITE, engineColor);
+        // playingBoard.startingPos();
+        
+        Board playingBoard = setBoards.setBoardW2M1582108();
+
+        
+
         pen.println("Enter engine selection process (RAVE/UCT)");
 
         input = eyes.nextLine();
