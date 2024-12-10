@@ -10,7 +10,6 @@ import utils.Move;
 import utils.PieceMoves;
 import utils.PieceTypes;
 import utils.UIutils;
-import utils.setBoards;
 
 public class midBot {
     public static void main(String[] args) throws Exception {
@@ -24,17 +23,17 @@ public class midBot {
         input = eyes.nextLine();
         if (input.equals("W")) {
             engineColor = PieceTypes.WHITE;
-        } else if (input.equals("B")) {
+            } else if (input.equals("B")) {
             engineColor = PieceTypes.BLACK;
-        } else {
-            pen.println("Next time please enter W or B. Engine automatically assigned to white.");
-            engineColor = PieceTypes.WHITE;
-        } // if/else
-
-        // Board playingBoard = new Board(PieceTypes.WHITE, engineColor);
-        // playingBoard.startingPos();
+            } else {
+                pen.println("Next time please enter W or B. Engine automatically assigned to white.");
+                engineColor = PieceTypes.WHITE;
+                } // if/else
+            
+        Board playingBoard = new Board(PieceTypes.WHITE, engineColor);
+        playingBoard.startingPos();
         
-        Board playingBoard = setBoards.setBoardW2M1582108();
+        //Board playingBoard = setBoards.setBoardW2M1582108();
 
         
 

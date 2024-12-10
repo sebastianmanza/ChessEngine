@@ -585,22 +585,7 @@ public class Board {
                         pieceMove.moveWeight *= 10;
                         newBoard.turnColor = this.turnColor;
                     } //if
-                    
-                    // /* In the simplest way possible, check if the opposing king is in check. */
-                    // Move[] pieceChecks = newBoard.generatePieceMoves(pieceMove.piece, pieceMove.endingSquare);
-                    // for (Move pieceCheck : pieceChecks) {
-                    //     int oppKingSquare = (this.turnColor == PieceTypes.WHITE) ? blackKingSquare : whiteKingSquare;
-                    //     /* If the move can hit the opposite king, it is a check. */
-                    //     if (pieceCheck.endingSquare == oppKingSquare) {
-                    //         newBoard.turnColor = this.oppColor();
-                    //         if (newBoard.nextMoves().length == 0) {
-                    //             pieceMove.moveWeight *= 10000;
-                    //         } else {
-                    //             pieceMove.moveWeight *= 10;
-                    //         }
-                    //         newBoard.turnColor = this.turnColor;
-                    //     }
-                    // }
+                
                     numPossibleMoves++;
                     if (numPossibleMoves >= nextPositions.length) {
                         /* Expand the array if it's full. */
@@ -611,6 +596,54 @@ public class Board {
         } // for
         /* Update if there are legal moves left. */
         updateLegalMoves(numPossibleMoves);
+        /* Return only the legal game states in a correctly sized array */
+        return Arrays.copyOf(nextPositions, numPossibleMoves);
+    } // nextMoves
+
+    public Move[] nextMoves(byte pieceColor) {
+        byte oppColor = (pieceColor == PieceTypes.WHITE) ? PieceTypes.BLACK : PieceTypes.WHITE;
+        /*
+         * Create an array to store all possible next moves, and an integer to store the
+         * current
+         * number of moves in the array.
+         */
+        Move[] nextPositions = new Move[50];
+        int numPossibleMoves = 0;
+        /* Loop through the board to check all the pieces */
+        for (int square = 0; square < 64; square++) {
+            byte piece = getSquare(square);
+            /*
+             * If the square is empty, or its an opponents piece, don't bother looking at
+             * the moves.
+             */
+            if (piece == PieceTypes.EMPTY || !isColor(piece, pieceColor)) {
+                continue;
+            } // if
+            /* Create a new array for all the possible moves of that piece */
+            Move[] pieceMoves = this.generatePieceMoves(piece, square);
+            /* Skip if no moves are generated */
+            if (pieceMoves == null || pieceMoves.length == 0) {
+                continue;
+            } // if
+            /*
+             * Add legal game states (those where the king is not in check) to the master
+             * list of
+             * nextPositions
+             */
+            for (Move pieceMove : pieceMoves) {
+                Board newBoard = PieceMoves.movePiece(pieceMove, this);
+
+                if (!newBoard.inCheck(pieceColor)) {
+                    nextPositions[numPossibleMoves] = pieceMove;
+                
+                    numPossibleMoves++;
+                    if (numPossibleMoves >= nextPositions.length) {
+                        /* Expand the array if it's full. */
+                        nextPositions = Arrays.copyOf(nextPositions, numPossibleMoves * 2);
+                    } // if
+                }
+            } // for
+        } // for
         /* Return only the legal game states in a correctly sized array */
         return Arrays.copyOf(nextPositions, numPossibleMoves);
     } // nextMoves

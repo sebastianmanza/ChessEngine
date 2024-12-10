@@ -31,15 +31,28 @@ public class setBoards {
     return board;
   }
 
-  public static Board setBoardW2M1869044() {
-    Board board = new Board(PieceTypes.WHITE, PieceTypes.WHITE);
-    board.setSquare(2, PieceTypes.WHITE_BISHOP);
-    board.setSquare(8, PieceTypes.WHITE_ROOK);
-    board.setSquare(12, PieceTypes.WHITE_QUEEN);
-    board.setSquare(13, PieceTypes.BLACK_BISHOP);
-    board.setSquare(14, PieceTypes.WHITE_PAWN);
-    board.setSquare(19, PieceTypes.WHITE_PAWN);
-    board.setSquare(20, PieceTypes.BLACK_PAWN);
-
+  public static Board setBoardFoolsMate() {
+    Board board = new Board(PieceTypes.BLACK, PieceTypes.WHITE);
+    board.startingPos();
+    board.setSquare(41, PieceTypes.EMPTY);
+    board.setSquare(42, PieceTypes.WHITE_PAWN);
+    board.setSquare(49, PieceTypes.EMPTY);
+    board.setSquare(51, PieceTypes.WHITE_PAWN);
+    board.setSquare(46, PieceTypes.EMPTY);
+    board.setSquare(44, PieceTypes.BLACK_PAWN);
+    
+    return board;
   }
+
+  // public static Board setBoardW2M1869044() {
+  //   Board board = new Board(PieceTypes.WHITE, PieceTypes.WHITE);
+  //   board.setSquare(2, PieceTypes.WHITE_BISHOP);
+  //   board.setSquare(8, PieceTypes.WHITE_ROOK);
+  //   board.setSquare(12, PieceTypes.WHITE_QUEEN);
+  //   board.setSquare(13, PieceTypes.BLACK_BISHOP);
+  //   board.setSquare(14, PieceTypes.WHITE_PAWN);
+  //   board.setSquare(19, PieceTypes.WHITE_PAWN);
+  //   board.setSquare(20, PieceTypes.BLACK_PAWN);
+
+  // }
 }

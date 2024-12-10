@@ -10,6 +10,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
+import utils.ANNUtils.ANNVector;
+import utils.ANNUtils.SimpleANN;
 import utils.Board;
 import utils.Move;
 import utils.PieceMoves;
@@ -24,11 +26,26 @@ public class MCT {
     /** The exploration parameter, used to balance exploration vs exploitation */
     private static final double EXPLORATION_PARAM = 0.8;
 
+    private static SimpleANN ann;
+
+    static {
+        int inputSize = 834;
+        int hiddenSize = 418;
+        int outputSize = 1;
+        ann = new SimpleANN(inputSize, hiddenSize, outputSize);
+        try {
+            ann.loadModel("chess_SimpleANN_Model.dat", inputSize, hiddenSize, outputSize);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+
     /** The root node of the move. (i.e. the move we are exploring from) */
     MCTNode root;
 
     /**
-     * Creates a new Monte Carlo Treee
+     * Creates a new Monte Carlo Tree
      * 
      * @param currentMove The most recent move made.
      */
@@ -106,11 +123,12 @@ public class MCT {
             MCTNode worst = Collections.min(root.nextMoves, Comparator.comparingInt(n -> n.playOuts.get()));
             System.out.printf(
                     "Move: %s Win CI [%.2f, %.2f] Playouts: %d, Length CI [%.2f, %.2f]\n",
-                    UIutils.toNotation(worst.move), ((worst.winRate.get() * 100) - (worst.standardErr.get() * 100)), ((worst.winRate.get() * 100) + (worst.standardErr.get() * 100)), worst.playOuts.get(),
-                    (worst.avgLength.get() - Math.sqrt(worst.lengthstdDev.get())), (worst.avgLength.get() + Math.sqrt(worst.lengthstdDev.get())));
+                    UIutils.toNotation(worst.move), ((worst.winRate.get() * 100) - (worst.standardErr.get() * 1.96 * 100)),
+                    ((worst.winRate.get() * 100) + (worst.standardErr.get() * 100)), worst.playOuts.get(),
+                    (worst.avgLength.get() - Math.sqrt(worst.lengthstdDev.get())),
+                    (worst.avgLength.get() + Math.sqrt(worst.lengthstdDev.get())));
             root.nextMoves.remove(worst);
-        } //for
-
+        } // for
 
         return bestNode.currentState;
     } // search(Duration)
@@ -203,20 +221,24 @@ public class MCT {
     private static simResultMCT simulate(MCTNode node, MCTNode root) {
         /* Set the current board and the maximum depth to simulate to */
         Board gameState = node.currentState;
-        int depthThresh = 300;
+        int depthThresh = 100;
         int depth = 0;
 
         /* Run the loop while the game is undecided */
         while (true) {
             Move nextMove = gameState.ranNextMove(ThreadLocalRandom.current());
 
+            if (depth++ > depthThresh) {
+                double ANNeval = ann.predict(ANNVector.createVector(gameState))[0];
+                return new simResultMCT(ANNeval, depth);
+            } 
             /*
              * If the game is checkmate/stalemate or if the depth is too far, end the game
              */
-            if (nextMove == null || ++depth > depthThresh) {
+            if (nextMove == null) {
                 double vicPoints = gameState.vicPoints();
-                double rew = reward(depth, vicPoints, gameState, root, root.playOuts.get());
-                return new simResultMCT(rew, depth - 1);
+                // double rew = reward(depth, vicPoints, gameState, root, root.playOuts.get());
+                return new simResultMCT(vicPoints, depth);
             } // if
             gameState = PieceMoves.movePiece(nextMove, gameState);
             gameState.turnColor = gameState.oppColor();
@@ -248,39 +270,44 @@ public class MCT {
                     wins = curNode.wins.addAndGet(1 - winPoints);
                 } // if/else
 
-                /* Set the new win rate */
-                double winRate = wins / playOuts;
-                curNode.winRate.set(winRate);
-
-                /* Set the new standard Error */
-                if (winRate == 0 || winRate == 1 || playOuts == 0) {
-                    curNode.standardErr.set(0.0);
-                } else {
-                    double stdError = Math.sqrt((winRate * (1 - winRate)) / playOuts);
-                    curNode.standardErr.set(stdError);
-                } // if/else
-
-                double oldMean = curNode.avgLength.get();
-                double delta = length - oldMean;
-
-                /* Update the mean length */
-                double newMean = oldMean + delta / playOuts;
-                curNode.avgLength.set(newMean);
-
-                /* Update the length variance */
-                if (playOuts > 1) {
-                    double oldVariance = curNode.lengthstdDev.get();
-                    double newVariance = ((playOuts - 1) * oldVariance / playOuts)
-                            + (delta * (length - newMean)) / playOuts;
-                    curNode.lengthstdDev.set(newVariance);
-                } else {
-                    curNode.lengthstdDev.set(0.0);
-                } // if/else
+                stdDevHelper(curNode, wins, playOuts, length);
 
             } // synchronized(node)
             curNode = curNode.lastMove;
         } // while
     } // backPropogate(MCTNode, double, MCTNode)
+
+    public static void stdDevHelper(MCTNode curNode, double wins, int playOuts, int length) {
+        /* Set the new win rate */
+        double winRate = wins / playOuts;
+        curNode.winRate.set(winRate);
+
+        /* Set the new standard Error */
+        if (winRate == 0 || winRate == 1 || playOuts == 0) {
+            curNode.standardErr.set(0.0);
+        } else {
+            double stdError = Math.sqrt((winRate * (1 - winRate)) / playOuts);
+            curNode.standardErr.set(stdError);
+        } // if/else
+
+        double oldMean = curNode.avgLength.get();
+        double delta = length - oldMean;
+
+        /* Update the mean length */
+        double newMean = oldMean + delta / playOuts;
+        curNode.avgLength.set(newMean);
+
+        /* Update the length variance */
+        if (playOuts > 1) {
+            double oldVariance = curNode.lengthstdDev.get();
+            double newVariance = ((playOuts - 1) * oldVariance / playOuts)
+                    + (delta * (length - newMean)) / playOuts;
+            curNode.lengthstdDev.set(newVariance);
+        } else {
+            curNode.lengthstdDev.set(0.0);
+        } // if/else
+
+    }
 
     /**
      * Returns a reward based on some heuristics and the game result.
@@ -295,7 +322,7 @@ public class MCT {
     private static double reward(int simLength, double result, Board gameState, MCTNode rootNode, int playOuts) {
         if (result == 0.5 || playOuts < 25000) {
             return result;
-        } //if
+        } // if
 
         double newResult;
         double k = 1; // A double representing a weight for the sigmoid function
@@ -304,7 +331,7 @@ public class MCT {
         double lengthStdDev = Math.sqrt(rootNode.lengthstdDev.get());
         if (lengthStdDev == 0) {
             return result;
-        } //if
+        } // if
         double stdMaterial = Math.abs(gameState.material());
         double sigmoidLength = 1 / (1 + (Math.exp(-k * stdLength)));
         double sigmoidWins = 1 / (1 + (Math.exp(-k * stdMaterial)));
